@@ -1,0 +1,8 @@
+UseBridges 1
+DataDirectory datadir
+
+ClientTransportPlugin splitpt exec ./client -log splitpt.log
+
+Bridge splitpt 192.0.2.1:80
+
+SocksPort auto
