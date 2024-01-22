@@ -1,0 +1,80 @@
+2024/01/16 21:27:14 --- Starting SplitPT ---
+2024/01/16 21:27:14 Started SOCKS listenener at 127.0.0.1:51961
+2024/01/16 21:27:14 SplitPT is done
+2024/01/16 21:38:53 --- Starting SplitPT ---
+2024/01/16 21:38:53 Started SOCKS listenener at 127.0.0.1:52087
+2024/01/16 21:38:53 SplitPT is done
+2024/01/16 21:40:23 --- Starting SplitPT ---
+2024/01/16 21:40:23 Started SOCKS listenener at 127.0.0.1:52108
+2024/01/16 21:40:23 SplitPT is done
+2024/01/16 21:41:24 --- Starting SplitPT ---
+2024/01/16 21:41:24 Started SOCKS listenener at 127.0.0.1:52114
+2024/01/16 21:41:24 SplitPT is done
+2024/01/16 21:51:40 --- Starting SplitPT ---
+2024/01/16 21:51:40 Started SOCKS listenener at 127.0.0.1:52247
+2024/01/16 21:51:40 SplitPT is done
+2024/01/16 21:53:17 --- Starting SplitPT ---
+2024/01/16 21:53:17 Started SOCKS listenener at 127.0.0.1:52276
+2024/01/16 21:53:17 SplitPT is done
+2024/01/16 21:54:46 --- Starting SplitPT ---
+2024/01/16 21:54:46 MethodNames [splitpt]
+2024/01/16 21:54:46 Started SOCKS listenener at 127.0.0.1:52292
+2024/01/16 21:54:46 SplitPT is done
+2024/01/16 21:56:28 --- Starting SplitPT ---
+2024/01/16 21:56:28 MethodNames: [splitpt]
+2024/01/16 21:56:28 splitpt method found
+2024/01/16 21:56:28 Started SOCKS listenener at 127.0.0.1:52308
+2024/01/16 21:56:28 SplitPT is done
+2024/01/16 22:00:14 --- Starting SplitPT ---
+2024/01/16 22:00:14 splitpt method found
+2024/01/16 22:00:14 Started SOCKS listenener at 127.0.0.1:52351
+2024/01/16 22:00:14 SplitPT is done
+2024/01/16 22:10:26 --- Starting SplitPT ---
+2024/01/16 22:10:26 splitpt method found
+2024/01/16 22:10:26 Started SOCKS listenener at 127.0.0.1:52482
+2024/01/16 22:10:26 socksAcceptLoop()
+2024/01/16 22:10:27 SOCKS accepted {192.0.0.1:80   map[]}
+2024/01/16 22:10:27 handler()
+2024/01/16 22:10:38 Dialing error: dial tcp 192.0.0.1:80: connect: network is unreachable
+2024/01/16 22:10:48 SOCKS accepted {192.0.0.1:80   map[]}
+2024/01/16 22:10:48 handler()
+2024/01/17 21:54:35 --- Starting SplitPT ---
+2024/01/17 21:54:35 splitpt method found
+2024/01/17 21:54:35 Started SOCKS listenener at 127.0.0.1:57965
+2024/01/17 21:54:35 socksAcceptLoop()
+2024/01/17 21:54:36 SOCKS accepted {192.0.0.1:80   map[]}
+2024/01/17 21:54:36 Starting new session
+2024/01/17 21:54:36 --- Starting SplitPT ---
+2024/01/17 21:54:36 splitpt method found
+2024/01/17 21:54:36 Started SOCKS listenener at 127.0.0.1:57968
+2024/01/17 21:54:36 socksAcceptLoop()
+2024/01/17 21:54:37 SOCKS accepted {192.0.0.1:80   map[]}
+2024/01/17 21:54:37 Starting new session
+2024/01/17 21:54:37 --- Starting SplitPT ---
+2024/01/17 21:54:37 splitpt method found
+2024/01/17 21:54:37 Started SOCKS listenener at 127.0.0.1:57971
+2024/01/17 21:54:37 socksAcceptLoop()
+2024/01/17 21:54:39 SOCKS accepted {192.0.0.1:80   map[]}
+2024/01/17 21:54:39 Starting new session
+2024/01/17 21:54:39 --- Starting SplitPT ---
+2024/01/17 21:54:39 splitpt method found
+2024/01/17 21:54:39 Started SOCKS listenener at 127.0.0.1:57974
+2024/01/17 21:54:39 socksAcceptLoop()
+2024/01/17 21:54:42 SOCKS accepted {192.0.0.1:80   map[]}
+2024/01/17 21:54:42 Starting new session
+2024/01/17 21:54:42 --- Starting SplitPT ---
+2024/01/17 21:54:42 splitpt method found
+2024/01/17 21:54:42 Started SOCKS listenener at 127.0.0.1:57977
+2024/01/17 21:54:42 socksAcceptLoop()
+2024/01/17 21:54:49 SOCKS accepted {192.0.0.1:80   map[]}
+2024/01/17 21:54:49 Starting new session
+2024/01/17 21:54:49 copy loop done
+2024/01/17 21:55:03 stopping splitpt
+2024/01/17 21:55:03 SplitPT is done
+2024/01/17 21:55:04 --- Starting SplitPT ---
+2024/01/17 21:55:04 splitpt method found
+2024/01/17 21:55:04 Started SOCKS listenener at 127.0.0.1:57986
+2024/01/17 21:55:04 socksAcceptLoop()
+2024/01/17 21:55:05 SOCKS accepted {192.0.0.1:80   map[]}
+2024/01/17 21:55:05 Starting new session
+2024/01/17 21:55:05 copy loop done

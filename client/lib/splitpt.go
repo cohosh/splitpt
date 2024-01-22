@@ -24,7 +24,9 @@ const (
 	PORT = "8080"
 	TYPE = "tcp"
 )
-type Transport struct {}
+type Transport struct {
+	config *ClientConfig
+}
 
 type ClientConfig struct {
 	// NumPaths is how many different paths traffic will be split across
@@ -32,12 +34,9 @@ type ClientConfig struct {
 	NumPaths int
 }
 
-func NewSplitPTClient(config ClientConfig) (*Transport, error) {
+func NewSplitPTClient(config *ClientConfig) (Transport, error) {
 
-	log.Println("\n\n\n --- Starting SplitPT Client ---")
-
-	transport := &Transport{}
-	return transport, nil
+	return Transport{config: config}, nil
 
 }
 

@@ -13,7 +13,7 @@ import (
 //	"path/filepath"
 //	"strconv"
 //	"strings"
-//	"sync"
+	"sync"
 	"syscall"
 
 	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
@@ -21,7 +21,8 @@ import (
 )
 
 // Exchanges bytes between SOCKS connection and splitpt connection
-// [AHL] unused fn bc i haven't setup event handling
+// TODO [AHL] This will eventuall have to copy packets to different proxies according
+// to the splitting algorithm being used
 func copyLoop(socks, sptconn io.ReadWriter) {
 	done := make(chan struct{}, 2)
 	go func() {
@@ -40,8 +41,7 @@ func copyLoop(socks, sptconn io.ReadWriter) {
 	log.Printf("copy loop done")
 }
 
-// TODO handle the socks cxn between splitpt and the pt being used to transport traffic
-func socksAcceptLoop(ln *pt.SocksListener, config spt.ClientConfig) error {
+func socksAcceptLoop(ln *pt.SocksListener, config spt.ClientConfig, shutdown chan struct{}, wg *sync.WaitGroup) error {
 	log.Printf("socksAcceptLoop()")
 	defer ln.Close()
 	for {
@@ -53,8 +53,28 @@ func socksAcceptLoop(ln *pt.SocksListener, config spt.ClientConfig) error {
 			}
 		}
 		log.Printf("SOCKS accepted %v", conn.Req)
-		// [AHL] should be replaced with copyLoop later
-		go handler(conn)
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			transport, err := spt.NewSplitPTClient(&config)
+			if err != nil {
+				log.Printf("Transport error: %s", err)
+				conn.Reject()
+				return
+			}
+
+			sconn, err := transport.Dial()
+			if err != nil {
+				log.Printf("Dial error: %s", err)
+				conn.Reject()
+				return
+			}
+
+			conn.Grant(nil)
+			defer sconn.Close()
+			copyLoop(conn, sconn)
+		} ()
 	}	
 	return nil
 }
@@ -115,6 +135,11 @@ func main() {
 		log.Printf("Proxy is nor supported")
 		os.Exit(1)
 	}
+
+	listeners := make([]net.Listener, 0)
+	shutdown := make(chan struct{})
+	var wg sync.WaitGroup
+
 	for _, methodName := range ptInfo.MethodNames { 
 		switch methodName {
 			case "splitpt":
@@ -125,8 +150,9 @@ func main() {
 					break
 				}
 				log.Printf("Started SOCKS listenener at %v", ln.Addr())
-				go socksAcceptLoop(ln, config)
+				go socksAcceptLoop(ln, config, shutdown, &wg)
 				pt.Cmethod(methodName, ln.Version(), ln.Addr())
+				listeners = append(listeners, ln)
 			default:
 				log.Printf("no such method splitpt")
 				pt.CmethodError(methodName, "no such method")
@@ -137,8 +163,27 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGTERM)
 
+	if os.Getenv("TOR_PT_EXIT_ON_STIN_CLOSE") == "1" {
+		// This environment variable means we should treat EOF on stdin
+		// just like SIGTERM: https://bugs.torproject.org/15435
+		go func() {
+			if _, err := io.Copy(ioutil.Discard, os.Stdin); err != nil {
+				log.Printf("calling io.Copy(ioutil.Discard, osStdin) returned error: %v", err)
+			}
+			log.Printf("synthesizing SIGTERM because of stdin close") 
+			sigChan <- syscall.SIGTERM
+		}()
+	}
+
+	// Wait for a signal.
 	<-sigChan
 	log.Printf("stopping splitpt")
+
+	for _, ln := range listeners {
+		ln.Close()
+	}
+	close(shutdown)
+	wg.Wait()
 	log.Println("SplitPT is done")
 
 }
