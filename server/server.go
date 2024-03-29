@@ -4,9 +4,12 @@ import (
 	//	"io"
 	//	"io/ioutil"
 
+	"errors"
+	"io"
 	"log"
 	"net"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	//	"net/url"
@@ -26,7 +29,30 @@ const (
 	TYPE = "tcp"
 )
 
-// func proxy(local *net.TCPConn, conn net.Conn) {}
+func proxy(local *net.TCPConn, conn net.Conn) {
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		if _, err := io.Copy(conn, local); err != nil && !errors.Is(err, io.ErrClosedPipe) {
+			log.Printf("error copying from ORPort %v", err)
+		}
+		local.CloseRead()
+		conn.Close()
+		wg.Done()
+	}()
+	go func() {
+		if _, err := io.Copy(local, conn); err != nil && !errors.Is(err, io.EOF) {
+			log.Printf("error copying to ORPort %v", err)
+		}
+		local.CloseWrite()
+		conn.Close()
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+}
 
 func handler(conn net.Conn, ptInfo pt.ServerInfo) error {
 	defer conn.Close()
@@ -35,7 +61,7 @@ func handler(conn net.Conn, ptInfo pt.ServerInfo) error {
 		return err
 	}
 	defer or.Close()
-	// [AHL] do something with or and conn
+	proxy(or, conn)
 
 	return nil
 }
