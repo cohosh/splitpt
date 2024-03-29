@@ -16,11 +16,13 @@ import (
 	"os"
 	//	"github.com/pion/ice/v2"
 	//	"github.com/xtaci/smux"
+	// "github.com/pion/ice/v2"
+	// "github.com/xtaci/smux"
 )
 
 const (
 	HOST = "localhost"
-	PORT = "8080"
+	PORT = "8888"
 	TYPE = "tcp"
 )
 
@@ -55,8 +57,7 @@ func (t *Transport) Dial() (net.Conn, error) {
 	if err != nil {
 		os.Exit(1)
 	}
-	conn, err := net.DialTCP(TYPE, nil, tcpServer)
-	return conn, nil
+	return net.DialTCP(TYPE, nil, tcpServer)
 
 }
 
