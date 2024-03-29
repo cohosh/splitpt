@@ -1,22 +1,21 @@
-/* 
-Package splitpt_client implements the functionality necessary for a client to establish a connection with 
+/*
+Package splitpt_client implements the functionality necessary for a client to establish a connection with
 a server using splitpt.
 */
 package splitpt_client
 
 import (
-//	"context"
-//	"errors"
+	//	"context"
+	//	"errors"
 	"log"
-//	"math/rand"
+	//	"math/rand"
 	"net"
-//	"net/url"
-//	"strings"
-//	"time"
+	//	"net/url"
+	//	"strings"
+	//	"time"
 	"os"
-
-//	"github.com/pion/ice/v2"
-//	"github.com/xtaci/smux"
+	//	"github.com/pion/ice/v2"
+	//	"github.com/xtaci/smux"
 )
 
 const (
@@ -24,6 +23,7 @@ const (
 	PORT = "8080"
 	TYPE = "tcp"
 )
+
 type Transport struct {
 	config *ClientConfig
 }
@@ -58,8 +58,8 @@ func (t *Transport) Dial() (net.Conn, error) {
 	conn, err := net.DialTCP(TYPE, nil, tcpServer)
 	return conn, nil
 
-
 }
+
 /*
 type SplitPTConn struct {
 	*smux.Stream
@@ -67,4 +67,3 @@ type SplitPTConn struct {
 
 func (conn *SplitPTConn) Close() error {}
 */
-

@@ -1,18 +1,19 @@
 package main
 
 import (
-//	"io"
-//	"io/ioutil"
+	//	"io"
+	//	"io/ioutil"
 	"log"
 	"net"
-//	"net/url"
+
+	//	"net/url"
 	"os"
-//	"os/signal"
-//	"strings"
+	//	"os/signal"
+	//	"strings"
 	"flag"
 
-//	"sync"
-//	"syscall"
+	//	"sync"
+	//	"syscall"
 	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
 )
 
@@ -21,7 +22,6 @@ const (
 	PORT = "8080"
 	TYPE = "tcp"
 )
-
 
 // func proxy(local *net.TCPConn, conn net.Conn) {}
 
@@ -68,9 +68,8 @@ func main() {
 		defer f.Close()
 	}
 
-	
 	log.Printf("Starting")
-	
+
 	ptInfo, err := pt.ServerSetup(nil)
 	if err != nil {
 		log.Printf("Error setting up server: %s", err)
@@ -79,17 +78,17 @@ func main() {
 
 	for _, bindaddr := range ptInfo.Bindaddrs {
 		switch bindaddr.MethodName {
-			case "splitpt":
-				ln, err := net.ListenTCP("tcp", bindaddr.Addr)
-				if err != nil {
-					log.Printf("Error: %s", err.Error())
-					break
-				}
-				go acceptLoop(ln, ptInfo)
-				pt.Smethod(bindaddr.MethodName, ln.Addr())
-			default:
-				pt.SmethodError(bindaddr.MethodName, "no such method")
-				log.Printf("No such method")
+		case "splitpt":
+			ln, err := net.ListenTCP("tcp", bindaddr.Addr)
+			if err != nil {
+				log.Printf("Error: %s", err.Error())
+				break
+			}
+			go acceptLoop(ln, ptInfo)
+			pt.Smethod(bindaddr.MethodName, ln.Addr())
+		default:
+			pt.SmethodError(bindaddr.MethodName, "no such method")
+			log.Printf("No such method")
 		}
 	}
 	pt.SmethodsDone()

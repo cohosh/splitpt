@@ -10,14 +10,14 @@ import (
 	"net"
 	"os"
 	"os/signal"
-//	"path/filepath"
-//	"strconv"
-//	"strings"
+	//	"path/filepath"
+	//	"strconv"
+	//	"strings"
 	"sync"
 	"syscall"
 
-	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
 	spt "anticensorshiptrafficsplitting/splitpt/client/lib"
+	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
 )
 
 // Exchanges bytes between SOCKS connection and splitpt connection
@@ -31,13 +31,13 @@ func copyLoop(socks, sptconn io.ReadWriter) {
 		}
 		done <- struct{}{}
 	}()
-	go func()  {
+	go func() {
 		if _, err := io.Copy(sptconn, socks); err != nil {
 			log.Printf("copying to SOCKS resulted in error: %v", err)
-		done <- struct{}{}
+			done <- struct{}{}
 		}
 	}()
-	<- done
+	<-done
 	log.Printf("copy loop done")
 }
 
@@ -48,7 +48,7 @@ func socksAcceptLoop(ln *pt.SocksListener, config spt.ClientConfig, shutdown cha
 		conn, err := ln.AcceptSocks()
 		if err != nil {
 			if e, ok := err.(net.Error); ok && e.Temporary() {
-				pt.Log(pt.LogSeverityError, "accept error: " + err.Error())
+				pt.Log(pt.LogSeverityError, "accept error: "+err.Error())
 				continue
 			}
 		}
@@ -74,8 +74,8 @@ func socksAcceptLoop(ln *pt.SocksListener, config spt.ClientConfig, shutdown cha
 			conn.Grant(nil)
 			defer sconn.Close()
 			copyLoop(conn, sconn)
-		} ()
-	}	
+		}()
+	}
 	return nil
 }
 
@@ -99,9 +99,8 @@ func handler(conn *pt.SocksConn) error {
 }
 
 func main() {
-	logFilename := flag.String("log", "", "name of log file")	
+	logFilename := flag.String("log", "", "name of log file")
 	flag.Parse()
-
 
 	// Logging
 	log.SetFlags(log.LstdFlags | log.LUTC)
@@ -119,10 +118,10 @@ func main() {
 	log.Println("--- Starting SplitPT ---")
 	// splitpt setup
 
-	config := spt.ClientConfig {
+	config := spt.ClientConfig{
 		NumPaths: 2,
 	}
-	
+
 	// begin goptlib client process
 	ptInfo, err := pt.ClientSetup(nil)
 	if err != nil {
@@ -140,22 +139,22 @@ func main() {
 	shutdown := make(chan struct{})
 	var wg sync.WaitGroup
 
-	for _, methodName := range ptInfo.MethodNames { 
+	for _, methodName := range ptInfo.MethodNames {
 		switch methodName {
-			case "splitpt":
-				log.Printf("splitpt method found")
-				ln, err := pt.ListenSocks("tcp", "127.0.0.1:0")
-				if err != nil {
-					pt.CmethodError(methodName, err.Error())
-					break
-				}
-				log.Printf("Started SOCKS listenener at %v", ln.Addr())
-				go socksAcceptLoop(ln, config, shutdown, &wg)
-				pt.Cmethod(methodName, ln.Version(), ln.Addr())
-				listeners = append(listeners, ln)
-			default:
-				log.Printf("no such method splitpt")
-				pt.CmethodError(methodName, "no such method")
+		case "splitpt":
+			log.Printf("splitpt method found")
+			ln, err := pt.ListenSocks("tcp", "127.0.0.1:0")
+			if err != nil {
+				pt.CmethodError(methodName, err.Error())
+				break
+			}
+			log.Printf("Started SOCKS listenener at %v", ln.Addr())
+			go socksAcceptLoop(ln, config, shutdown, &wg)
+			pt.Cmethod(methodName, ln.Version(), ln.Addr())
+			listeners = append(listeners, ln)
+		default:
+			log.Printf("no such method splitpt")
+			pt.CmethodError(methodName, "no such method")
 		}
 	}
 	pt.CmethodsDone()
@@ -170,7 +169,7 @@ func main() {
 			if _, err := io.Copy(ioutil.Discard, os.Stdin); err != nil {
 				log.Printf("calling io.Copy(ioutil.Discard, osStdin) returned error: %v", err)
 			}
-			log.Printf("synthesizing SIGTERM because of stdin close") 
+			log.Printf("synthesizing SIGTERM because of stdin close")
 			sigChan <- syscall.SIGTERM
 		}()
 	}
