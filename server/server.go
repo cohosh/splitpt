@@ -3,8 +3,11 @@ package main
 import (
 	//	"io"
 	//	"io/ioutil"
+
 	"log"
 	"net"
+	"os/signal"
+	"syscall"
 
 	//	"net/url"
 	"os"
@@ -33,6 +36,7 @@ func handler(conn net.Conn, ptInfo pt.ServerInfo) error {
 	}
 	defer or.Close()
 	// [AHL] do something with or and conn
+
 	return nil
 }
 
@@ -53,7 +57,6 @@ func acceptLoop(ln net.Listener, ptInfo pt.ServerInfo) error {
 }
 
 func main() {
-
 	// Setup logging
 	logFileName := flag.String("log", "", "log file to write to")
 	flag.Parse()
@@ -66,6 +69,7 @@ func main() {
 			log.Fatalf("can't open log file: %s", err)
 		}
 		defer f.Close()
+		log.SetOutput(f)
 	}
 
 	log.Printf("Starting")
@@ -86,10 +90,16 @@ func main() {
 			}
 			go acceptLoop(ln, ptInfo)
 			pt.Smethod(bindaddr.MethodName, ln.Addr())
+
 		default:
 			pt.SmethodError(bindaddr.MethodName, "no such method")
 			log.Printf("No such method")
 		}
 	}
 	pt.SmethodsDone()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGTERM)
+
+	<-sigChan
 }
