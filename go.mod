@@ -64,4 +64,5 @@ require (
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc // indirect
+	www.bamsoftware.com/git/turbotunnel-paper.git/example v0.0.0-20230405005448-1a8d1ac9225b // indirect
 )
