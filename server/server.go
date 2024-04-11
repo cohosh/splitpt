@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	//	"net/url"
 	"os"
@@ -21,6 +22,11 @@ import (
 	//	"sync"
 	//	"syscall"
 	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
+
+	"github.com/xtaci/kcp-go/v5"
+	"github.com/xtaci/smux"
+
+	tt "anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
 )
 
 const (
@@ -29,24 +35,24 @@ const (
 	TYPE = "tcp"
 )
 
-func proxy(local *net.TCPConn, conn net.Conn) {
+func proxy(local *net.TCPConn, stream *smux.Stream) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 
 	go func() {
-		if _, err := io.Copy(conn, local); err != nil && !errors.Is(err, io.ErrClosedPipe) {
+		if _, err := io.Copy(stream, local); err != nil && !errors.Is(err, io.ErrClosedPipe) {
 			log.Printf("error copying from ORPort %v", err)
 		}
 		local.CloseRead()
-		conn.Close()
+		stream.Close()
 		wg.Done()
 	}()
 	go func() {
-		if _, err := io.Copy(local, conn); err != nil && !errors.Is(err, io.EOF) {
+		if _, err := io.Copy(local, stream); err != nil && !errors.Is(err, io.EOF) {
 			log.Printf("error copying to ORPort %v", err)
 		}
 		local.CloseWrite()
-		conn.Close()
+		stream.Close()
 		wg.Done()
 	}()
 
@@ -54,22 +60,22 @@ func proxy(local *net.TCPConn, conn net.Conn) {
 
 }
 
-func handler(conn net.Conn, ptInfo pt.ServerInfo) error {
-	defer conn.Close()
-	or, err := pt.DialOr(&ptInfo, conn.RemoteAddr().String(), "splitpt")
+func handler(stream *smux.Stream, ptInfo pt.ServerInfo) error {
+	defer stream.Close()
+	or, err := pt.DialOr(&ptInfo, stream.RemoteAddr().String(), "splitpt")
 	if err != nil {
 		return err
 	}
 	defer or.Close()
-	proxy(or, conn)
+	proxy(or, stream)
 
 	return nil
 }
 
-func acceptLoop(ln net.Listener, ptInfo pt.ServerInfo) error {
-	defer ln.Close()
+func acceptLoop(kcpln *kcp.Listener, ptInfo pt.ServerInfo) error {
+	defer kcpln.Close()
 	for {
-		conn, err := ln.Accept()
+		conn, err := kcpln.AcceptKCP()
 		if err != nil {
 			if e, ok := err.(net.Error); ok && e.Temporary() {
 				continue
@@ -77,9 +83,47 @@ func acceptLoop(ln net.Listener, ptInfo pt.ServerInfo) error {
 			log.Printf("accept error: %s", err.Error())
 			return err
 		}
-		go handler(conn, ptInfo)
+		go func() {
+			defer conn.Close()
+			err := acceptStreams(conn, ptInfo)
+			if err != nil {
+				log.Printf("Error: %s", err)
+			}
+		} ()
 	}
 	return nil
+}
+
+func acceptStreams(conn *kcp.UDPSession, ptInfo pt.ServerInfo) error {
+	smuxConfig := smux.DefaultConfig()
+	smuxConfig.Version = 2
+	smuxConfig.KeepAliveTimeout = 1 * time.Minute
+	sess, err := smux.Server(conn, smuxConfig)
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	for {
+		stream, err := sess.AcceptStream()
+		if err != nil {
+			if err, ok := err.(net.Error); ok && err.Temporary() {
+				continue
+			}
+			return err
+		}
+
+		go func() {
+			defer stream.Close()
+			err := handler(stream, ptInfo)
+			if err != nil {
+				log.Printf("Error: %s", err)
+			}
+		} ()
+	}
+	return nil
+
+
 }
 
 func main() {
@@ -114,7 +158,16 @@ func main() {
 				log.Printf("Error: %s", err.Error())
 				break
 			}
-			go acceptLoop(ln, ptInfo)
+
+			// TurboTunnel
+			pconn := tt.NewListenerPacketConn(ln)
+			kcpln, err := kcp.ServeConn(nil, 0, 0, pconn)
+			if err != nil {
+				log.Printf("Error: %s", err.Error())
+				break
+			}
+
+			go acceptLoop(kcpln, ptInfo)
 			pt.Smethod(bindaddr.MethodName, ln.Addr())
 
 		default:
