@@ -20,6 +20,13 @@ import (
 	spt "anticensorshiptrafficsplitting/splitpt/client/lib"
 
 	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
+
+	"time"
+
+	"www.bamsoftware.com/git/turbotunnel-paper.git/example/turbotunnel/turbotunnel"
+	tt "anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
+	"github.com/xtaci/kcp-go/v5"
+	"github.com/xtaci/smux"
 )
 
 // Exchanges bytes between SOCKS connection and splitpt connection
