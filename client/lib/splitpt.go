@@ -9,15 +9,17 @@ import (
 	//	"errors"
 	"log"
 	//	"math/rand"
-	"net"
+//	"net"
 	//	"net/url"
 	//	"strings"
-	//	"time"
-	"os"
+		"time"
+//	"os"
 	//	"github.com/pion/ice/v2"
-	//	"github.com/xtaci/smux"
-	// "github.com/pion/ice/v2"
-	// "github.com/xtaci/smux"
+	"github.com/xtaci/smux"
+	"github.com/xtaci/kcp-go/v5"
+	tt "anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
+
+
 )
 
 const (
@@ -42,7 +44,7 @@ func NewSplitPTClient(config *ClientConfig) (Transport, error) {
 
 }
 
-func (t *Transport) Dial() (net.Conn, error) {
+func (t *Transport) Dial() (*smux.Stream, error) {
 	var cleanup []func()
 	defer func() {
 		for i := len(cleanup) - 1; i >= 0; i-- {
@@ -51,13 +53,40 @@ func (t *Transport) Dial() (net.Conn, error) {
 	}()
 
 	log.Printf("Starting new session")
-
-	// AHL simple tcp server for now
-	tcpServer, err := net.ResolveTCPAddr(TYPE, HOST+":"+PORT)
+	
+	// TurboTunnel
+	dummyaddr := ""
+	sessionID := tt.NewSessionID()
+	pconn := tt.NewRedialPacketConn(sessionID, dummyaddr)
+	conn, err := kcp.NewConn2(pconn.RemoteAddr(), nil, 0, 0, pconn)
 	if err != nil {
-		os.Exit(1)
+		return nil, err
 	}
-	return net.DialTCP(TYPE, nil, tcpServer)
+	log.Printf("SessionID: %v", sessionID)
+
+	smuxConfig := smux.DefaultConfig()
+	smuxConfig.Version = 2
+	smuxConfig.KeepAliveTimeout = 1 * time.Minute
+	smuxConfig.MaxReceiveBuffer = 4 * 1024 * 1024 // default is 4 * 1024 * 1024
+	smuxConfig.MaxStreamBuffer = 1 * 1024 * 1024  // default is 65536
+	sess, err := smux.Client(conn, smuxConfig)
+	if err != nil {
+		return nil, err
+	}
+	defer sess.Close()
+
+	stream, err := sess.OpenStream()
+	if err != nil {
+		return nil, err
+	}
+
+	return stream, nil
+	// AHL simple tcp server for now
+	//tcpServer, err := net.ResolveTCPAddr(TYPE, HOST+":"+PORT)
+	//if err != nil {
+	//	os.Exit(1)
+	//}
+	//return net.DialTCP(TYPE, nil, tcpServer)
 
 }
 

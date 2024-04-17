@@ -18,30 +18,23 @@ import (
 	"syscall"
 
 	spt "anticensorshiptrafficsplitting/splitpt/client/lib"
-
 	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
-
-	"time"
-
-	"www.bamsoftware.com/git/turbotunnel-paper.git/example/turbotunnel/turbotunnel"
-	tt "anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
-	"github.com/xtaci/kcp-go/v5"
 	"github.com/xtaci/smux"
 )
 
 // Exchanges bytes between SOCKS connection and splitpt connection
 // TODO [AHL] This will eventuall have to copy packets to different proxies according
 // to the splitting algorithm being used
-func copyLoop(socks, sptconn io.ReadWriter) {
+func copyLoop(socks *pt.SocksConn, sptstream *smux.Stream) {
 	done := make(chan struct{}, 2)
 	go func() {
-		if _, err := io.Copy(socks, sptconn); err != nil {
+		if _, err := io.Copy(socks, sptstream); err != nil {
 			log.Printf("copying to SOCKS resulted in error: %v", err)
 		}
 		done <- struct{}{}
 	}()
 	go func() {
-		if _, err := io.Copy(sptconn, socks); err != nil {
+		if _, err := io.Copy(sptstream, socks); err != nil {
 			log.Printf("copying to SOCKS resulted in error: %v", err)
 			done <- struct{}{}
 		}
@@ -125,6 +118,7 @@ func main() {
 	}
 	log.SetOutput(logOutput)
 	log.Println("--- Starting SplitPT ---")
+
 	// splitpt setup
 
 	config := spt.ClientConfig{
