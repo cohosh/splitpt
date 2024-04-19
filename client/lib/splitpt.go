@@ -5,17 +5,10 @@ a server using splitpt.
 package splitpt_client
 
 import (
-	//	"context"
-	//	"errors"
-	"log"
-	//	"math/rand"
-	//	"net"
-	//	"net/url"
-	//	"strings"
-	"time"
-	//	"os"
-	//	"github.com/pion/ice/v2"
 	tt "anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
+	"log"
+	"time"
+
 	"github.com/xtaci/kcp-go/v5"
 	"github.com/xtaci/smux"
 )

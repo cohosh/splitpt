@@ -1,9 +1,6 @@
 package main
 
 import (
-	//	"io"
-	//	"io/ioutil"
-
 	"errors"
 	"io"
 	"log"
@@ -13,14 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	//	"net/url"
-	"os"
-	//	"os/signal"
-	//	"strings"
 	"flag"
+	"os"
 
-	//	"sync"
-	//	"syscall"
 	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
 
 	"github.com/xtaci/kcp-go/v5"
