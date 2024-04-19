@@ -8,11 +8,10 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-//	"www.bamsoftware.com/git/turbotunnel-paper.git/example/turbotunnel/turbotunnel"
+	//	"www.bamsoftware.com/git/turbotunnel-paper.git/example/turbotunnel/turbotunnel"
 )
 
-//var errClosed = errors.New("operation on closed connection")
+// var errClosed = errors.New("operation on closed connection")
 var errNotImplemented = errors.New("not implemented")
 
 // stringAddr satisfies the net.Addr interface using fixed strings for the

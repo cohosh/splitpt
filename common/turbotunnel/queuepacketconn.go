@@ -9,6 +9,7 @@ import (
 )
 
 var errClosed = errors.New("operation on closed connection")
+
 //var errNotImplemented = errors.New("not implemented")
 
 // taggedPacket is a combination of a []byte and a net.Addr, encapsulating the
@@ -133,5 +134,3 @@ func (c *QueuePacketConn) LocalAddr() net.Addr { return c.localAddr }
 func (c *QueuePacketConn) SetDeadline(t time.Time) error      { return errNotImplemented }
 func (c *QueuePacketConn) SetReadDeadline(t time.Time) error  { return errNotImplemented }
 func (c *QueuePacketConn) SetWriteDeadline(t time.Time) error { return errNotImplemented }
-
-

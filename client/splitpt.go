@@ -18,8 +18,9 @@ import (
 	"syscall"
 
 	spt "anticensorshiptrafficsplitting/splitpt/client/lib"
-	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
+
 	"github.com/xtaci/smux"
+	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
 )
 
 // Exchanges bytes between SOCKS connection and splitpt connection

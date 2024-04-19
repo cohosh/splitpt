@@ -89,7 +89,7 @@ func acceptLoop(kcpln *kcp.Listener, ptInfo pt.ServerInfo) error {
 			if err != nil {
 				log.Printf("Error: %s", err)
 			}
-		} ()
+		}()
 	}
 	return nil
 }
@@ -119,10 +119,9 @@ func acceptStreams(conn *kcp.UDPSession, ptInfo pt.ServerInfo) error {
 			if err != nil {
 				log.Printf("Error: %s", err)
 			}
-		} ()
+		}()
 	}
 	return nil
-
 
 }
 

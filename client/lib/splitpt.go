@@ -9,17 +9,15 @@ import (
 	//	"errors"
 	"log"
 	//	"math/rand"
-//	"net"
+	//	"net"
 	//	"net/url"
 	//	"strings"
-		"time"
-//	"os"
+	"time"
+	//	"os"
 	//	"github.com/pion/ice/v2"
-	"github.com/xtaci/smux"
-	"github.com/xtaci/kcp-go/v5"
 	tt "anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
-
-
+	"github.com/xtaci/kcp-go/v5"
+	"github.com/xtaci/smux"
 )
 
 const (
@@ -53,7 +51,7 @@ func (t *Transport) Dial() (*smux.Stream, error) {
 	}()
 
 	log.Printf("Starting new session")
-	
+
 	// TurboTunnel
 	dummyaddr := ""
 	sessionID := tt.NewSessionID()
