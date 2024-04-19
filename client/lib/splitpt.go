@@ -46,7 +46,7 @@ func (t *Transport) Dial() (*smux.Stream, error) {
 	log.Printf("Starting new session")
 
 	// TurboTunnel
-	dummyaddr := ""
+	dummyaddr := "localhost:8080"
 	sessionID := tt.NewSessionID()
 	pconn := tt.NewRedialPacketConn(sessionID, dummyaddr)
 	conn, err := kcp.NewConn2(pconn.RemoteAddr(), nil, 0, 0, pconn)
