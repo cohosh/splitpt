@@ -38,17 +38,19 @@ type RedialPacketConn struct {
 	sendQueue  chan []byte
 	closeOnce  sync.Once
 	closed     chan struct{}
+	ptconn     net.Conn
 	// What error to return when the RedialPacketConn is closed.
 	err atomic.Value
 }
 
-func NewRedialPacketConn(sessionID SessionID, remoteAddr string) *RedialPacketConn {
+func NewRedialPacketConn(sessionID SessionID, ptconn net.Conn) *RedialPacketConn {
 	c := &RedialPacketConn{
 		sessionID:  sessionID,
-		remoteAddr: &stringAddr{"tcp", remoteAddr},
+		remoteAddr: ptconn.RemoteAddr(),
 		recvQueue:  make(chan []byte, 32),
 		sendQueue:  make(chan []byte, 32),
 		closed:     make(chan struct{}),
+		ptconn:     ptconn,
 	}
 	go func() {
 		c.closeWithError(c.loop())
@@ -75,16 +77,12 @@ func (c *RedialPacketConn) loop() error {
 }
 
 func (c *RedialPacketConn) dialAndExchange() error {
-	conn, err := net.Dial("tcp", c.remoteAddr.String())
-	// Failure to establish a new TCP connection is a fatal error.
-	if err != nil {
-		return err
-	}
+	conn := c.ptconn
 	defer conn.Close()
 
 	// Begin by sending the session identifier; everything after that is
 	// encapsulated packets.
-	_, err = conn.Write(c.sessionID[:])
+	_, err := conn.Write(c.sessionID[:])
 	if err != nil {
 		// Errors after the dial are not fatal but cause a redial.
 		return nil

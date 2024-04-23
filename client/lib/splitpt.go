@@ -7,8 +7,10 @@ package splitpt_client
 import (
 	tt "anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
 	"log"
+	"net"
 	"time"
 
+	"github.com/txthinking/socks5"
 	"github.com/xtaci/kcp-go/v5"
 	"github.com/xtaci/smux"
 )
@@ -45,10 +47,25 @@ func (t *Transport) Dial() (*smux.Stream, error) {
 
 	log.Printf("Starting new session")
 
+	ptclient, err := ConnectToPT()
+	if err != nil {
+		log.Printf("Error connecting to pt")
+		return nil, err
+	}
+	tcpaddr, err := net.ResolveTCPAddr("tcp", "localhost:9090")
+	if err != nil {
+		log.Printf("Error resolving tcp addr")
+		return nil, err
+	}
+	ptconn, err := ptclient.DialWithLocalAddr("tcp", "", "localhost:9090", tcpaddr)
+	if err != nil {
+		log.Printf("Error dialing")
+		return nil, err
+	}
+
 	// TurboTunnel
-	dummyaddr := "localhost:8080"
 	sessionID := tt.NewSessionID()
-	pconn := tt.NewRedialPacketConn(sessionID, dummyaddr)
+	pconn := tt.NewRedialPacketConn(sessionID, ptconn)
 	conn, err := kcp.NewConn2(pconn.RemoteAddr(), nil, 0, 0, pconn)
 	if err != nil {
 		return nil, err
@@ -64,7 +81,6 @@ func (t *Transport) Dial() (*smux.Stream, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer sess.Close()
 
 	stream, err := sess.OpenStream()
 	if err != nil {
@@ -79,6 +95,18 @@ func (t *Transport) Dial() (*smux.Stream, error) {
 	//}
 	//return net.DialTCP(TYPE, nil, tcpServer)
 
+}
+
+func ConnectToPT() (*socks5.Client, error) {
+	// Make a connection to a client PT process
+	// https://spec.torproject.org/pt-spec/per-connection-args.html
+	client, err := socks5.NewClient("127.0.0.1:64538", "cert=xmK64YEbi2h1aZC5P5s7MyiUN8gmypIRDnaiRKmB4/qT0lGkaAglYlzKPrkpc4I2PHhVNg;iat-mode=0", "\x00", 60, 0)
+	if err != nil {
+		log.Printf("Error connecting to pt")
+		return nil, err
+	}
+
+	return client, nil
 }
 
 /*
