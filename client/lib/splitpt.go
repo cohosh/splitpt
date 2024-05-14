@@ -106,9 +106,14 @@ func ConnectToPT() (*socks5.Client, error) {
 
 	ptchan := make(chan string)
 	pterr := make(chan error)
+	ptshutdown := make(chan struct{})
 
 	go func() {
-		ptproc := exec.Command("lyrebird")
+		ptproc := exec.Command("lyrebird", "-enableLogging", "-logLevel", "DEBUG")
+		//log.Printf(ptproc.Env)
+		ptproc.Env = append(ptproc.Environ(), "TOR_PT_MANAGED_TRANSPORT_VER=1")
+		ptproc.Env = append(ptproc.Environ(), "TOR_PT_CLIENT_TRANSPORTS=obfs4")
+		ptproc.Env = append(ptproc.Environ(), "TOR_PT_STATE_LOCATION=../pt-setup/client-state/")
 		ptprocout, err := ptproc.StdoutPipe()
 		if err != nil {
 			log.Printf("Error getting stdout pipe")
@@ -127,15 +132,21 @@ func ConnectToPT() (*socks5.Client, error) {
 				line := strings.Split(scanner.Text(), " ")
 				ptchan <- line[3]
 				log.Printf("Got SOCKS5 addr")
-				break
+				//break
 			} else {
 				continue
 			}
 		}
-		if err := scanner.Err(); err != nil {
+		if err2 := scanner.Err(); err2 != nil {
 			log.Printf("Error scanning for socks5 addr")
-			pterr <- err
+			pterr <- err2
 		}
+		<-ptshutdown
+		err3 := ptproc.Wait()
+		if err3 != nil {
+			log.Printf("Error completing command: %s", err3.Error())
+		}
+		log.Printf("PT Process Exited")
 	}()
 
 	var socks5addr string
