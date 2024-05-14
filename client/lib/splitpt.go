@@ -6,8 +6,11 @@ package splitpt_client
 
 import (
 	tt "anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
+	"bufio"
 	"log"
 	"net"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/txthinking/socks5"
@@ -100,7 +103,51 @@ func (t *Transport) Dial() (*smux.Stream, error) {
 func ConnectToPT() (*socks5.Client, error) {
 	// Make a connection to a client PT process
 	// https://spec.torproject.org/pt-spec/per-connection-args.html
-	client, err := socks5.NewClient("127.0.0.1:64538", "cert=xmK64YEbi2h1aZC5P5s7MyiUN8gmypIRDnaiRKmB4/qT0lGkaAglYlzKPrkpc4I2PHhVNg;iat-mode=0", "\x00", 60, 0)
+
+	ptchan := make(chan string)
+	pterr := make(chan error)
+
+	go func() {
+		ptproc := exec.Command("lyrebird")
+		ptprocout, err := ptproc.StdoutPipe()
+		if err != nil {
+			log.Printf("Error getting stdout pipe")
+			pterr <- err
+		}
+		err1 := ptproc.Start()
+		if err1 != nil {
+			log.Printf("Error starting PT process")
+			pterr <- err1
+		}
+		scanner := bufio.NewScanner(ptprocout)
+		for scanner.Scan() {
+			log.Printf("scanned: ")
+			log.Printf(scanner.Text())
+			if strings.Contains(scanner.Text(), "socks5") {
+				line := strings.Split(scanner.Text(), " ")
+				ptchan <- line[3]
+				log.Printf("Got SOCKS5 addr")
+				break
+			} else {
+				continue
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			log.Printf("Error scanning for socks5 addr")
+			pterr <- err
+		}
+	}()
+
+	var socks5addr string
+	select {
+	case socks5addr = <-ptchan:
+		//socks5addr := <-ptchan
+		log.Printf("SOCKS5 addr: %s", socks5addr)
+	case err := <-pterr:
+		return nil, err
+	}
+
+	client, err := socks5.NewClient(socks5addr, "cert=xmK64YEbi2h1aZC5P5s7MyiUN8gmypIRDnaiRKmB4/qT0lGkaAglYlzKPrkpc4I2PHhVNg;iat-mode=0", "\x00", 60, 0)
 	if err != nil {
 		log.Printf("Error connecting to pt")
 		return nil, err
