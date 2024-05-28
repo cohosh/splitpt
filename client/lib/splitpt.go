@@ -7,6 +7,7 @@ package splitpt_client
 import (
 	tt "anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
 	"bufio"
+	"context"
 	"log"
 	"net"
 	"os/exec"
@@ -108,22 +109,24 @@ func ConnectToPT() (*socks5.Client, error) {
 	pterr := make(chan error)
 	ptshutdown := make(chan struct{})
 
+	ctx := context.Background()
+	ptproc := exec.CommandContext(ctx, "lyrebird", "-enableLogging", "-logLevel", "DEBUG")
+	//log.Printf(ptproc.Env)
+	ptproc.Env = append(ptproc.Environ(), "TOR_PT_MANAGED_TRANSPORT_VER=1")
+	ptproc.Env = append(ptproc.Environ(), "TOR_PT_CLIENT_TRANSPORTS=obfs4")
+	ptproc.Env = append(ptproc.Environ(), "TOR_PT_STATE_LOCATION=../pt-setup/client-state/")
+	ptprocout, err := ptproc.StdoutPipe()
+	if err != nil {
+		log.Printf("Error getting stdout pipe")
+		pterr <- err
+	}
+	err1 := ptproc.Start()
+	if err1 != nil {
+		log.Printf("Error starting PT process")
+		pterr <- err1
+	}
+
 	go func() {
-		ptproc := exec.Command("lyrebird", "-enableLogging", "-logLevel", "DEBUG")
-		//log.Printf(ptproc.Env)
-		ptproc.Env = append(ptproc.Environ(), "TOR_PT_MANAGED_TRANSPORT_VER=1")
-		ptproc.Env = append(ptproc.Environ(), "TOR_PT_CLIENT_TRANSPORTS=obfs4")
-		ptproc.Env = append(ptproc.Environ(), "TOR_PT_STATE_LOCATION=../pt-setup/client-state/")
-		ptprocout, err := ptproc.StdoutPipe()
-		if err != nil {
-			log.Printf("Error getting stdout pipe")
-			pterr <- err
-		}
-		err1 := ptproc.Start()
-		if err1 != nil {
-			log.Printf("Error starting PT process")
-			pterr <- err1
-		}
 		scanner := bufio.NewScanner(ptprocout)
 		for scanner.Scan() {
 			log.Printf("scanned: ")
@@ -132,7 +135,7 @@ func ConnectToPT() (*socks5.Client, error) {
 				line := strings.Split(scanner.Text(), " ")
 				ptchan <- line[3]
 				log.Printf("Got SOCKS5 addr")
-				//break
+				break
 			} else {
 				continue
 			}
