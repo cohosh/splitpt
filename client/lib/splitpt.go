@@ -53,20 +53,21 @@ func (t *Transport) Dial() (*smux.Stream, error) {
 
 	ptclient, err := ConnectToPT()
 	if err != nil {
-		log.Printf("Error connecting to pt")
+		log.Printf("Error connecting to pt: %s", err.Error())
 		return nil, err
 	}
 	tcpaddr, err := net.ResolveTCPAddr("tcp", "localhost:9090")
 	if err != nil {
-		log.Printf("Error resolving tcp addr")
+		log.Printf("Error resolving tcp addr: %s", err.Error())
 		return nil, err
 	}
 	ptconn, err := ptclient.DialWithLocalAddr("tcp", "", "localhost:9090", tcpaddr)
 	if err != nil {
-		log.Printf("Error dialing")
+		log.Printf("Error dialing: %s", err.Error())
 		return nil, err
 	}
 
+	log.Printf("Setting up turbotunnel")
 	// TurboTunnel
 	sessionID := tt.NewSessionID()
 	pconn := tt.NewRedialPacketConn(sessionID, ptconn)
@@ -113,24 +114,27 @@ func ConnectToPT() (*socks5.Client, error) {
 	ptproc := exec.CommandContext(ctx, "lyrebird", "-enableLogging", "-logLevel", "DEBUG")
 	//log.Printf(ptproc.Env)
 	ptproc.Env = append(ptproc.Environ(), "TOR_PT_MANAGED_TRANSPORT_VER=1")
+	ptproc.Env = append(ptproc.Environ(), "TOR_PT_EXIT_ON_STDIN_CLOSE=0")
 	ptproc.Env = append(ptproc.Environ(), "TOR_PT_CLIENT_TRANSPORTS=obfs4")
 	ptproc.Env = append(ptproc.Environ(), "TOR_PT_STATE_LOCATION=../pt-setup/client-state/")
+
+	log.Printf("Getting stdoutpipe")
 	ptprocout, err := ptproc.StdoutPipe()
 	if err != nil {
 		log.Printf("Error getting stdout pipe")
 		pterr <- err
 	}
+	log.Printf("Starting ptproc")
 	err1 := ptproc.Start()
 	if err1 != nil {
-		log.Printf("Error starting PT process")
+		log.Printf("Error starting PT process: %s", err1.Error())
 		pterr <- err1
 	}
 
+	log.Printf("Scanning for SOCKS address")
 	go func() {
 		scanner := bufio.NewScanner(ptprocout)
 		for scanner.Scan() {
-			log.Printf("scanned: ")
-			log.Printf(scanner.Text())
 			if strings.Contains(scanner.Text(), "socks5") {
 				line := strings.Split(scanner.Text(), " ")
 				ptchan <- line[3]
@@ -141,7 +145,7 @@ func ConnectToPT() (*socks5.Client, error) {
 			}
 		}
 		if err2 := scanner.Err(); err2 != nil {
-			log.Printf("Error scanning for socks5 addr")
+			log.Printf("Error scanning for socks5 addr: %s", err2.Error())
 			pterr <- err2
 		}
 		<-ptshutdown
@@ -149,18 +153,18 @@ func ConnectToPT() (*socks5.Client, error) {
 		if err3 != nil {
 			log.Printf("Error completing command: %s", err3.Error())
 		}
-		log.Printf("PT Process Exited")
 	}()
 
 	var socks5addr string
 	select {
 	case socks5addr = <-ptchan:
-		//socks5addr := <-ptchan
 		log.Printf("SOCKS5 addr: %s", socks5addr)
 	case err := <-pterr:
+		log.Printf("pterr had something in it")
 		return nil, err
 	}
 
+	log.Printf("Getting SOCKS client")
 	client, err := socks5.NewClient(socks5addr, "cert=xmK64YEbi2h1aZC5P5s7MyiUN8gmypIRDnaiRKmB4/qT0lGkaAglYlzKPrkpc4I2PHhVNg;iat-mode=0", "\x00", 60, 0)
 	if err != nil {
 		log.Printf("Error connecting to pt")
