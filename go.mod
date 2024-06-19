@@ -8,7 +8,7 @@ require gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib v
 
 require (
 	cloud.google.com/go v0.26.0 // indirect
-	github.com/BurntSushi/toml v0.3.1 // indirect
+	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/client9/misspell v0.3.4 // indirect
 	github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f // indirect
