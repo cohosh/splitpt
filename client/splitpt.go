@@ -119,9 +119,9 @@ func main() {
 
 	// splitpt setup
 
-	config := spt.ClientConfig{
-		NumPaths: 2,
-	}
+	// Get the config from the toml
+	log.Println("Getting client config")
+	config := spt.getClientConfig()
 
 	// begin goptlib client process
 	ptInfo, err := pt.ClientSetup(nil)
