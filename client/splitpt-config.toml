@@ -1,0 +1,4 @@
+[splitpt-config]
+
+NumConnections = 1
+ConnectionTransports = ["lyrebird"]

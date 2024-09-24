@@ -32,10 +32,12 @@ const (
 }*/
 
 type Transport struct {
-	config *ClientConfig
+	config               *ClientTOMLConfig
+	numPaths             int
+	connectionTransports []string
 }
 
-func NewSplitPTClient(config *ClientConfig) (Transport, error) {
+func NewSplitPTClient(config *ClientTOMLConfig) (Transport, error) {
 
 	return Transport{config: config}, nil
 

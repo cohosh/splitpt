@@ -6,13 +6,13 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-type ClientConfig struct {
+type ClientTOMLConfig struct {
 	NumConnections       int
 	ConnectionsTransport []string
 }
 
-func getClientConfig() (*ClientConfig, error) {
-	var config ClientConfig
+func GetClientTOMLConfig() (*ClientTOMLConfig, error) {
+	var config ClientTOMLConfig
 	_, err := toml.Decode("../splitpt-config.toml", &config)
 	if err != nil {
 		log.Printf("Error decoding TOML config")
