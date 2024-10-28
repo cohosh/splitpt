@@ -99,7 +99,9 @@ func handler(conn *pt.SocksConn) error {
 }
 
 func main() {
+	// Parse command line args
 	logFilename := flag.String("log", "", "name of log file")
+	tomlFilename := flag.String("toml", "", "name of toml config file")
 	flag.Parse()
 
 	// Logging
@@ -115,16 +117,20 @@ func main() {
 		logOutput = logFile
 	}
 	log.SetOutput(logOutput)
+
+	//var spt.ClientTOMLConfig tomlConfig
+	if *tomlFilename != "" {
+		log.Printf("toml filename cannot be empty")
+		return
+	}
+	tomlConfig, err := spt.GetClientTOMLConfig(*tomlFilename)
+	if err != nil {
+		log.Printf("Error with toml config: %v", err)
+		return
+	}
 	log.Println("--- Starting SplitPT ---")
 
 	// splitpt setup
-	// Get the config from the toml
-	log.Println("Getting client config")
-	tomlConfig, err := spt.GetClientTOMLConfig()
-	if err != nil {
-		log.Printf("Error parsing TOML: %s", err)
-		return
-	}
 
 	// begin goptlib client process
 	ptInfo, err := pt.ClientSetup(nil)

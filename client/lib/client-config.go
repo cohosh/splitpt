@@ -11,9 +11,9 @@ type ClientTOMLConfig struct {
 	ConnectionsTransport []string
 }
 
-func GetClientTOMLConfig() (*ClientTOMLConfig, error) {
+func GetClientTOMLConfig(tomlFilename string) (*ClientTOMLConfig, error) {
 	var config ClientTOMLConfig
-	_, err := toml.Decode("../splitpt-config.toml", &config)
+	_, err := toml.Decode(tomlFilename, &config)
 	if err != nil {
 		log.Printf("Error decoding TOML config")
 		return nil, err
