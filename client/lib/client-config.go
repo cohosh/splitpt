@@ -6,9 +6,15 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+type PTConnection struct {
+	Transport string
+	Args      []string
+	Cert      string
+}
+
 type ClientTOMLConfig struct {
-	NumConnections       int
-	ConnectionsTransport []string
+	Connections  map[string]PTConnection
+	SplittingAlg string
 }
 
 func GetClientTOMLConfig(tomlFilename string) (*ClientTOMLConfig, error) {
@@ -16,12 +22,6 @@ func GetClientTOMLConfig(tomlFilename string) (*ClientTOMLConfig, error) {
 	_, err := toml.Decode(tomlFilename, &config)
 	if err != nil {
 		log.Printf("Error decoding TOML config")
-		return nil, err
-	}
-
-	// Check that everything's in order
-	if config.NumConnections != len(config.ConnectionsTransport) {
-		log.Printf("TOML Config error: Number of connections does not match number of listed transports")
 		return nil, err
 	}
 
