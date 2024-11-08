@@ -1,4 +1,14 @@
 [splitpt-config]
+splitting-alg = "random"
 
-NumConnections = 1
-ConnectionTransports = ["lyrebird"]
+[[connections]]
+
+transport = "lyrebird"
+args = ""
+cert = ""
+
+[[connections]]
+
+transport = "lyrebird"
+args = ""
+cert = ""
