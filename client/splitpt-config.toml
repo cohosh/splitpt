@@ -1,14 +1,13 @@
-[splitpt-config]
-splitting-alg = "random"
+splittingalg = "random"
 
 [[connections]]
 
 transport = "lyrebird"
-args = ""
+args = ["", ""]
 cert = ""
 
 [[connections]]
 
-transport = "lyrebird"
-args = ""
+transport = "webtunnel"
+args = ["",""]
 cert = ""

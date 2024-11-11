@@ -41,7 +41,7 @@ func copyLoop(socks *pt.SocksConn, sptstream *smux.Stream) {
 	log.Printf("copy loop done")
 }
 
-func socksAcceptLoop(ln *pt.SocksListener, tomlConfig *spt.ClientTOMLConfig, shutdown chan struct{}, wg *sync.WaitGroup) error {
+func socksAcceptLoop(ln *pt.SocksListener, tomlConfig *spt.ConnectionsList, shutdown chan struct{}, wg *sync.WaitGroup) error {
 	log.Printf("socksAcceptLoop()")
 	defer ln.Close()
 	for {
@@ -118,8 +118,9 @@ func main() {
 	}
 	log.SetOutput(logOutput)
 
+	log.Println("--- Setting up SplitPT ---")
 	//var spt.ClientTOMLConfig tomlConfig
-	if *tomlFilename != "" {
+	if *tomlFilename == "" {
 		log.Printf("toml filename cannot be empty")
 		return
 	}
@@ -128,6 +129,8 @@ func main() {
 		log.Printf("Error with toml config: %v", err)
 		return
 	}
+	//log.Println(len(tomlConfig.Connections))
+	log.Println("Finished getting config from TOML file")
 	log.Println("--- Starting SplitPT ---")
 
 	// splitpt setup

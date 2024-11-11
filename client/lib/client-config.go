@@ -6,24 +6,28 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-type PTConnection struct {
+type ConnectionsList struct {
+	Connections  map[string]Connections
+	Splittingalg string
+}
+
+type Connections struct {
 	Transport string
 	Args      []string
 	Cert      string
 }
 
-type ClientTOMLConfig struct {
-	Connections  map[string]PTConnection
-	SplittingAlg string
-}
-
-func GetClientTOMLConfig(tomlFilename string) (*ClientTOMLConfig, error) {
-	var config ClientTOMLConfig
-	_, err := toml.Decode(tomlFilename, &config)
+func GetClientTOMLConfig(tomlFilename string) (*ConnectionsList, error) {
+	log.Printf("Decoding TOML")
+	log.Printf(tomlFilename)
+	var config ConnectionsList
+	meta, err := toml.DecodeFile(tomlFilename, &config)
 	if err != nil {
 		log.Printf("Error decoding TOML config")
 		return nil, err
 	}
-
+	log.Printf(config.Splittingalg)
+	log.Println(meta.Keys())
+	log.Println(meta.Undecoded())
 	return &config, nil
 }
