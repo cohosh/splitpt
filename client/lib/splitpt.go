@@ -25,17 +25,19 @@ const (
 	TYPE = "tcp"
 )
 
-type Transport struct {
-	config *ClientConfig
-}
-
-type ClientConfig struct {
+/*type ClientConfig struct {
 	// NumPaths is how many different paths traffic will be split across
 	// [AHL] TBD if this is a field that will stay but for now is a placeholder
 	NumPaths int
+}*/
+
+type Transport struct {
+	config               *ConnectionsList
+	numPaths             int
+	connectionTransports []string
 }
 
-func NewSplitPTClient(config *ClientConfig) (Transport, error) {
+func NewSplitPTClient(config *ConnectionsList) (Transport, error) {
 
 	return Transport{config: config}, nil
 

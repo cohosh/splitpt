@@ -1,0 +1,13 @@
+splittingalg = "random"
+
+[[connections]]
+
+transport = "lyrebird"
+args = ["", ""]
+cert = ""
+
+[[connections]]
+
+transport = "webtunnel"
+args = ["",""]
+cert = ""
