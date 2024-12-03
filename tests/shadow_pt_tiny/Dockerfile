@@ -2,8 +2,10 @@ FROM debian:12-slim as base
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV DEBIAN_FRONTEND=noninteractive
 # use NRL 5540 branch package caches
-COPY sources.list /etc/apt/sources.list
-COPY pip.conf /etc/pip.conf
+#COPY sources.list /etc/apt/sources.list
+#COPY pip.conf /etc/pip.conf
+# NOISE parks cluster config
+#COPY resolv.conf /etc/resolv.conf
 # Define software versions
 ENV SHADOW_COMMIT=db817386689f27ae8661f64479d2b9e34c278af0
 ENV TGEN_COMMIT=816d68cd3d0ff7d0ec71e8bbbae24ecd6a636117
@@ -231,7 +233,8 @@ RUN apt-get update && apt-get install -y \
 RUN apt-get update && apt-get install -y \
   libglib2.0-0 \
   libigraph-dev \
-  libprocps-dev
+#  libprocps-dev
+  libproc2-dev
 # perf
 #RUN apt-get update && apt-get install -y linux-tools-generic
 #RUN mkdir -p /root/.local/bin
@@ -261,4 +264,4 @@ ENV LD_LIBRARY_PATH=/opt/lib
 
 # Default command runs the simulation
 #CMD tornettools simulate -s /opt/bin/shadow tornet
-CMD bash run.sh
+#CMD bash run.sh
