@@ -5,13 +5,10 @@ a server using splitpt.
 package splitpt_client
 
 import (
+	split "anticensorshiptrafficsplitting/splitpt/common/split"
 	tt "anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
-	"bufio"
-	"context"
 	"log"
 	"net"
-	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/txthinking/socks5"
@@ -25,25 +22,15 @@ const (
 	TYPE = "tcp"
 )
 
-/*type ClientConfig struct {
-	// NumPaths is how many different paths traffic will be split across
-	// [AHL] TBD if this is a field that will stay but for now is a placeholder
-	NumPaths int
-}*/
-
-type Transport struct {
-	config               *ConnectionsList
-	numPaths             int
-	connectionTransports []string
+type SplitPTClient struct {
+	config SplitPTClientConfig
 }
 
-func NewSplitPTClient(config *ConnectionsList) (Transport, error) {
-
-	return Transport{config: config}, nil
-
+func NewSplitPTClient(sptClientConfig split.SplitPTClientConfig) (SplitPTClient, error) {
+	return SplitPTClient{config: config}, nil
 }
 
-func (t *Transport) Dial() (*smux.Stream, error) {
+func (t *SplitPTClient) Dial() (*smux.Stream, error) {
 	var cleanup []func()
 	defer func() {
 		for i := len(cleanup) - 1; i >= 0; i-- {
@@ -53,26 +40,22 @@ func (t *Transport) Dial() (*smux.Stream, error) {
 
 	log.Printf("Starting new session")
 
-	ptclient, err := ConnectToPT()
+	connList, err := t.GetPTConnections()
 	if err != nil {
-		log.Printf("Error connecting to pt: %s", err.Error())
-		return nil, err
-	}
-	tcpaddr, err := net.ResolveTCPAddr("tcp", "localhost:9090")
-	if err != nil {
-		log.Printf("Error resolving tcp addr: %s", err.Error())
-		return nil, err
-	}
-	ptconn, err := ptclient.DialWithLocalAddr("tcp", "", "localhost:9090", tcpaddr)
-	if err != nil {
-		log.Printf("Error dialing: %s", err.Error())
+		log.Printf("Error connecting to pts: %s", err.Error())
 		return nil, err
 	}
 
 	log.Printf("Setting up turbotunnel")
 	// TurboTunnel
 	sessionID := tt.NewSessionID()
-	pconn := tt.NewRedialPacketConn(sessionID, ptconn)
+	// TODO make this the correct type of redial packat conn for the splitting algorithm
+	/*var pconn
+	switch sptConfig.SplittingAlg {
+		case "round-robin":
+			pconn = split.NewRoundRobinPacketConn(sessionID, ptconn)
+	}*/
+	pconn := split.NewRoundRobinPacketConn(sessionID, connList)
 	conn, err := kcp.NewConn2(pconn.RemoteAddr(), nil, 0, 0, pconn)
 	if err != nil {
 		return nil, err
@@ -104,82 +87,26 @@ func (t *Transport) Dial() (*smux.Stream, error) {
 
 }
 
-func ConnectToPT() (*socks5.Client, error) {
-	// Make a connection to a client PT process
-	// https://spec.torproject.org/pt-spec/per-connection-args.html
-
-	ptchan := make(chan string)
-	pterr := make(chan error)
-	ptshutdown := make(chan struct{})
-
-	ctx := context.Background()
-	ptproc := exec.CommandContext(ctx, "lyrebird", "-enableLogging", "-logLevel", "DEBUG")
-	//log.Printf(ptproc.Env)
-	ptproc.Env = append(ptproc.Environ(), "TOR_PT_MANAGED_TRANSPORT_VER=1")
-	ptproc.Env = append(ptproc.Environ(), "TOR_PT_EXIT_ON_STDIN_CLOSE=0")
-	ptproc.Env = append(ptproc.Environ(), "TOR_PT_CLIENT_TRANSPORTS=obfs4")
-	ptproc.Env = append(ptproc.Environ(), "TOR_PT_STATE_LOCATION=../pt-setup/client-state/")
-
-	log.Printf("Getting stdoutpipe")
-	ptprocout, err := ptproc.StdoutPipe()
+func (t *SplitPTClient) GetPTConnections() ([]net.Conn, error) {
+	var connlist []net.Conn
+	tcpaddr, err := net.ResolveTCPAddr("tcp", "localhost:9090")
 	if err != nil {
-		log.Printf("Error getting stdout pipe")
-		pterr <- err
+		log.Printf("Error resolving TCP address: %s", err.Error())
+		return nil, error
 	}
-	log.Printf("Starting ptproc")
-	err1 := ptproc.Start()
-	if err1 != nil {
-		log.Printf("Error starting PT process: %s", err1.Error())
-		pterr <- err1
-	}
-
-	log.Printf("Scanning for SOCKS address")
-	go func() {
-		scanner := bufio.NewScanner(ptprocout)
-		for scanner.Scan() {
-			if strings.Contains(scanner.Text(), "socks5") {
-				line := strings.Split(scanner.Text(), " ")
-				ptchan <- line[3]
-				log.Printf("Got SOCKS5 addr")
-				break
-			} else {
-				continue
-			}
+	for conn := range t.config.Connections {
+		var client *socks5.Client
+		if conn.Transport == "lyrebird" {
+			client := spt.LyrebirdConnect(conn.Args, conn.Cert)
+		} else {
+			err := error.New("Unrecognized PT")
+			return _, err
 		}
-		if err2 := scanner.Err(); err2 != nil {
-			log.Printf("Error scanning for socks5 addr: %s", err2.Error())
-			pterr <- err2
+		ptconn, err := client.DialWithLocalAddr("tcp", "", "localhost:9090", tcpaddr)
+		if err != nil {
+			log.Printf("Error dialing: %s", err.Error())
+			return nil, err
 		}
-		<-ptshutdown
-		err3 := ptproc.Wait()
-		if err3 != nil {
-			log.Printf("Error completing command: %s", err3.Error())
-		}
-	}()
-
-	var socks5addr string
-	select {
-	case socks5addr = <-ptchan:
-		log.Printf("SOCKS5 addr: %s", socks5addr)
-	case err := <-pterr:
-		log.Printf("pterr had something in it")
-		return nil, err
+		connList.append(ptconn)
 	}
-
-	log.Printf("Getting SOCKS client")
-	client, err := socks5.NewClient(socks5addr, "cert=xmK64YEbi2h1aZC5P5s7MyiUN8gmypIRDnaiRKmB4/qT0lGkaAglYlzKPrkpc4I2PHhVNg;iat-mode=0", "\x00", 60, 0)
-	if err != nil {
-		log.Printf("Error connecting to pt")
-		return nil, err
-	}
-
-	return client, nil
 }
-
-/*
-type SplitPTConn struct {
-	*smux.Stream
-}
-
-func (conn *SplitPTConn) Close() error {}
-*/
