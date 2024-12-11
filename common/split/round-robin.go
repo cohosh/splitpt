@@ -31,24 +31,37 @@ type RoundRobinPacketConn struct {
 	sendQueue  chan []byte
 	closeOnce  sync.Once
 	closed     chan struct{}
-	ptconn     net.Conn
+	//ptconn     net.Conn // make this a list of conns?
+	connList []net.Conn
+	state    uint // Keep track of the last connection used
 	// What error to return when the RoundRobinPacketConn is closed.
 	err atomic.Value
 }
 
-func NewRoundRobinPacketConn(sessionID SessionID, ptconn net.Conn) *RoundRobinPacketConn {
+func NewRoundRobinPacketConn(sessionID SessionID, connList []net.Conn) *RoundRobinPacketConn {
 	c := &RoundRobinPacketConn{
 		sessionID:  sessionID,
 		remoteAddr: ptconn.RemoteAddr(),
 		recvQueue:  make(chan []byte, 32),
 		sendQueue:  make(chan []byte, 32),
 		closed:     make(chan struct{}),
-		ptconn:     ptconn,
+		//ptconn:     ptconn,
+		connList: connList,
+		state:    0,
 	}
 	go func() {
 		c.closeWithError(c.loop())
 	}()
 	return c
+}
+
+func (c *RoundRobinPacketConn) getConn() (net.Conn, error) {
+	conn := c.connList[c.state]
+	c.state += 1
+	if c.state > len(c.connList) {
+		c.state = 0
+	}
+	return conn, nil
 }
 
 // loop dials c.remoteAddr in a loop, exchanging packets on each new connection
@@ -70,7 +83,7 @@ func (c *RoundRobinPacketConn) loop() error {
 }
 
 func (c *RoundRobinPacketConn) dialAndExchange() error {
-	conn := c.ptconn // <- get the correct conn here
+	conn := c.getConn() // <- get the correct conn here
 	defer conn.Close()
 
 	// Begin by sending the session identifier; everything after that is
