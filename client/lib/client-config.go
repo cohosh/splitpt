@@ -1,14 +1,15 @@
 package splitpt_client
 
 import (
+	"errors"
 	"log"
 
 	"github.com/BurntSushi/toml"
 )
 
-type ConnectionsList struct {
+type SplitPTConfig struct {
 	Connections  map[string]Connections
-	Splittingalg string
+	SplittingAlg string
 }
 
 type Connections struct {
@@ -26,7 +27,14 @@ func GetClientTOMLConfig(tomlFilename string) (*ConnectionsList, error) {
 		log.Printf("Error decoding TOML config")
 		return nil, err
 	}
-	log.Printf(config.Splittingalg)
+
+	switch config.SplittingAlg {
+	case "round-robin":
+		log.Printf(config.SplittingAlg)
+	default:
+		log.Printf("Invalid splitting algorithm")
+		return _, errors.New("Invalid splitting algorithm in TOML")
+	}
 	log.Println(meta.Keys())
 	log.Println(meta.Undecoded())
 	return &config, nil
