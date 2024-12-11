@@ -8,13 +8,20 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
+	tt "anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
 )
 
+var errClosed = errors.New("operation on closed connection")
 var errNotImplemented = errors.New("not implemented")
 
 // stringAddr satisfies the net.Addr interface using fixed strings for the
 // Network and String methods.
 type stringAddr struct{ network, address string }
+
+func (addr stringAddr) Network() string { return addr.network }
+func (addr stringAddr) String() string  { return addr.address }
 
 // RoundRobinPacketConn implements the net.PacketConn interface by continually
 //
@@ -25,29 +32,31 @@ type stringAddr struct{ network, address string }
 // persistent connection. One could, for example, handle every ReadFrom or
 // WriteTo as an independent network operation.
 type RoundRobinPacketConn struct {
-	sessionID  SessionID
+	sessionID  turbotunnel.SessionID
 	remoteAddr net.Addr
 	recvQueue  chan []byte
 	sendQueue  chan []byte
 	closeOnce  sync.Once
 	closed     chan struct{}
-	//ptconn     net.Conn // make this a list of conns?
-	connList []net.Conn
-	state    uint // Keep track of the last connection used
+	connsList  []net.Conn
 	// What error to return when the RoundRobinPacketConn is closed.
-	err atomic.Value
+	err   atomic.Value
+	state uint32
 }
 
-func NewRoundRobinPacketConn(sessionID SessionID, connList []net.Conn) *RoundRobinPacketConn {
+func NewRoundRobinPacketConn(
+	sessionID tt.SessionID,
+	connsList []net.Conn,
+	remote net.Addr,
+) *RoundRobinPacketConn {
 	c := &RoundRobinPacketConn{
 		sessionID:  sessionID,
-		remoteAddr: ptconn.RemoteAddr(),
+		remoteAddr: remote,
 		recvQueue:  make(chan []byte, 32),
 		sendQueue:  make(chan []byte, 32),
 		closed:     make(chan struct{}),
-		//ptconn:     ptconn,
-		connList: connList,
-		state:    0,
+		conns:      conns,
+		state:      0,
 	}
 	go func() {
 		c.closeWithError(c.loop())
@@ -55,13 +64,10 @@ func NewRoundRobinPacketConn(sessionID SessionID, connList []net.Conn) *RoundRob
 	return c
 }
 
-func (c *RoundRobinPacketConn) getConn() (net.Conn, error) {
-	conn := c.connList[c.state]
-	c.state += 1
-	if c.state > len(c.connList) {
-		c.state = 0
-	}
-	return conn, nil
+// Next returns the next connection to write a packet to
+func (c *RoundRobinPacketConn) getConn() net.Conn {
+	index := atomic.AddUint32(&c.counter, 1)
+	return c.conns[index%uint32(len(c.conns))]
 }
 
 // loop dials c.remoteAddr in a loop, exchanging packets on each new connection
@@ -75,23 +81,25 @@ func (c *RoundRobinPacketConn) loop() error {
 		default:
 		}
 		log.Printf("session %v: redialing %v", c.sessionID, c.remoteAddr)
-		err := c.dialAndExchange()
+		err := c.exchange()
 		if err != nil {
 			return err
 		}
 	}
 }
 
-func (c *RoundRobinPacketConn) dialAndExchange() error {
-	conn := c.getConn() // <- get the correct conn here
-	defer conn.Close()
+func (c *RoundRobinPacketConn) exchange() error {
 
-	// Begin by sending the session identifier; everything after that is
+	// Begin by sending the session identifier to each connection; everything after that is
 	// encapsulated packets.
-	_, err := conn.Write(c.sessionID[:])
-	if err != nil {
-		// Errors after the dial are not fatal but cause a redial.
-		return nil
+	for _, conn := range c.conns {
+		_, err := conn.Write(c.sessionID[:])
+		if err != nil {
+			// TODO: Because we don't currently have a redial mechanism,
+			// errors are fatal
+			log.Printf("Error writing to conn %s", err.Error())
+			return err
+		}
 	}
 
 	var wg sync.WaitGroup
@@ -99,28 +107,31 @@ func (c *RoundRobinPacketConn) dialAndExchange() error {
 	done := make(chan struct{})
 	// Read encapsulated packets from the connection and write them to
 	// c.recvQueue.
-	go func() {
-		defer wg.Done()
-		defer close(done) // Signal the write loop to finish.
-		br := bufio.NewReader(conn)
-		for {
-			p, err := ReadPacket(br)
-			if err != nil {
-				return
+	for _, conn := range c.conns {
+		go func() {
+			defer wg.Done()
+			defer close(done) // Signal the write loop to finish.
+			br := bufio.NewReader(conn)
+			for {
+				p, err := turbotunnel.ReadPacket(br)
+				if err != nil {
+					return
+				}
+				select {
+				case <-c.closed:
+					return
+				case c.recvQueue <- p:
+				}
 			}
-			select {
-			case <-c.closed:
-				return
-			case c.recvQueue <- p:
-			}
-		}
-	}()
+		}()
+	}
 	// Read packets from c.sendQueue and encapsulate them into the
 	// connection.
 	go func() {
 		defer wg.Done()
-		defer conn.Close() // Signal the read loop to finish.
-		bw := bufio.NewWriter(conn)
+		for _, conn := range c.conns {
+			defer conn.Close() // Signal the read loop to finish.
+		}
 		for {
 			select {
 			case <-c.closed:
@@ -128,7 +139,9 @@ func (c *RoundRobinPacketConn) dialAndExchange() error {
 			case <-done:
 				return
 			case p := <-c.sendQueue:
-				err := WritePacket(bw, p)
+				conn := c.getConn()
+				bw := bufio.NewWriter(conn)
+				err := turbotunnel.WritePacket(bw, p)
 				if err != nil {
 					return
 				}
