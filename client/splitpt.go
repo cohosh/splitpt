@@ -41,7 +41,7 @@ func copyLoop(socks *pt.SocksConn, sptstream *smux.Stream) {
 	log.Printf("copy loop done")
 }
 
-func socksAcceptLoop(ln *pt.SocksListener, config spt.ClientConfig, shutdown chan struct{}, wg *sync.WaitGroup) error {
+func socksAcceptLoop(ln *pt.SocksListener, tomlConfig *spt.ConnectionsList, shutdown chan struct{}, wg *sync.WaitGroup) error {
 	log.Printf("socksAcceptLoop()")
 	defer ln.Close()
 	for {
@@ -57,7 +57,7 @@ func socksAcceptLoop(ln *pt.SocksListener, config spt.ClientConfig, shutdown cha
 
 		go func() {
 			defer wg.Done()
-			transport, err := spt.NewSplitPTClient(&config)
+			transport, err := spt.NewSplitPTClient(tomlConfig)
 			if err != nil {
 				log.Printf("Transport error: %s", err)
 				conn.Reject()
@@ -99,7 +99,9 @@ func handler(conn *pt.SocksConn) error {
 }
 
 func main() {
+	// Parse command line args
 	logFilename := flag.String("log", "", "name of log file")
+	tomlFilename := flag.String("toml", "", "name of toml config file")
 	flag.Parse()
 
 	// Logging
@@ -115,13 +117,23 @@ func main() {
 		logOutput = logFile
 	}
 	log.SetOutput(logOutput)
+
+	log.Println("--- Setting up SplitPT ---")
+	//var spt.ClientTOMLConfig tomlConfig
+	if *tomlFilename == "" {
+		log.Printf("toml filename cannot be empty")
+		return
+	}
+	tomlConfig, err := spt.GetClientTOMLConfig(*tomlFilename)
+	if err != nil {
+		log.Printf("Error with toml config: %v", err)
+		return
+	}
+	//log.Println(len(tomlConfig.Connections))
+	log.Println("Finished getting config from TOML file")
 	log.Println("--- Starting SplitPT ---")
 
 	// splitpt setup
-
-	config := spt.ClientConfig{
-		NumPaths: 2,
-	}
 
 	// begin goptlib client process
 	ptInfo, err := pt.ClientSetup(nil)
@@ -150,7 +162,7 @@ func main() {
 				break
 			}
 			log.Printf("Started SOCKS listenener at %v", ln.Addr())
-			go socksAcceptLoop(ln, config, shutdown, &wg)
+			go socksAcceptLoop(ln, tomlConfig, shutdown, &wg)
 			pt.Cmethod(methodName, ln.Version(), ln.Addr())
 			listeners = append(listeners, ln)
 		default:

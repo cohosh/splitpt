@@ -1,6 +1,6 @@
 module anticensorshiptrafficsplitting/splitpt
 
-go 1.21
+go 1.21.0
 
 toolchain go1.21.5
 
@@ -8,7 +8,7 @@ require gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib v
 
 require (
 	cloud.google.com/go v0.26.0 // indirect
-	github.com/BurntSushi/toml v0.3.1 // indirect
+	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/client9/misspell v0.3.4 // indirect
 	github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f // indirect
@@ -26,6 +26,7 @@ require (
 	github.com/kr/pty v1.1.1 // indirect
 	github.com/kr/text v0.1.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
+	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/pion/dtls/v2 v2.2.7 // indirect
 	github.com/pion/ice/v2 v2.3.11 // indirect
 	github.com/pion/logging v0.2.2 // indirect
@@ -37,8 +38,8 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4 // indirect
-	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/stretchr/testify v1.8.4 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
+	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/templexxx/cpu v0.1.0 // indirect
 	github.com/templexxx/xorsimd v0.4.2 // indirect
 	github.com/tjfoc/gmsm v1.4.1 // indirect
