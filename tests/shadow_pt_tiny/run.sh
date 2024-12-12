@@ -4,7 +4,7 @@
 
 #set -euo pipefail
 
-simdir=trial1
+simdir=trial3
 
 #tar -xaf tornet__net-0.01__load-3.2__trial-1__pt-obfs4.tar.xz
 
@@ -23,4 +23,4 @@ tornettools plot ${simdir} --prefix ${simdir}/pdfs
 # goes through all the log files and compresses them
 tornettools archive ${simdir}
 
-chown -R 777 ${simdir} 
+chmod -R 777 ${simdir} 

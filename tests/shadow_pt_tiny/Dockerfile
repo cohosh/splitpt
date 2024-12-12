@@ -264,4 +264,4 @@ ENV LD_LIBRARY_PATH=/opt/lib
 
 # Default command runs the simulation
 #CMD tornettools simulate -s /opt/bin/shadow tornet
-#CMD bash run.sh
+CMD bash run.sh
