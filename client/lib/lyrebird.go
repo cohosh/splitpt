@@ -10,7 +10,7 @@ import (
 	"github.com/txthinking/socks5"
 )
 
-func LyrebirdConnect() (*socks5.Client, error) {
+func LyrebirdConnect(args *[]string, cert string) (*socks5.Client, error) {
 	log.Printf("Conecting to Lyrebird")
 	ptchan := make(chan string)
 	pterr := make(chan error)

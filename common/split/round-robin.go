@@ -38,7 +38,7 @@ type RoundRobinPacketConn struct {
 	sendQueue  chan []byte
 	closeOnce  sync.Once
 	closed     chan struct{}
-	connsList  []net.Conn
+	connList   []net.Conn
 	// What error to return when the RoundRobinPacketConn is closed.
 	err   atomic.Value
 	state uint32
@@ -46,7 +46,7 @@ type RoundRobinPacketConn struct {
 
 func NewRoundRobinPacketConn(
 	sessionID tt.SessionID,
-	connsList []net.Conn,
+	connList []net.Conn,
 	remote net.Addr,
 ) *RoundRobinPacketConn {
 	c := &RoundRobinPacketConn{
@@ -55,7 +55,7 @@ func NewRoundRobinPacketConn(
 		recvQueue:  make(chan []byte, 32),
 		sendQueue:  make(chan []byte, 32),
 		closed:     make(chan struct{}),
-		conns:      conns,
+		connList:   connList,
 		state:      0,
 	}
 	go func() {
@@ -66,8 +66,8 @@ func NewRoundRobinPacketConn(
 
 // Next returns the next connection to write a packet to
 func (c *RoundRobinPacketConn) getConn() net.Conn {
-	index := atomic.AddUint32(&c.counter, 1)
-	return c.conns[index%uint32(len(c.conns))]
+	index := atomic.AddUint32(&c.state, 1)
+	return c.connList[index%uint32(len(c.connList))]
 }
 
 // loop dials c.remoteAddr in a loop, exchanging packets on each new connection
@@ -92,7 +92,7 @@ func (c *RoundRobinPacketConn) exchange() error {
 
 	// Begin by sending the session identifier to each connection; everything after that is
 	// encapsulated packets.
-	for _, conn := range c.conns {
+	for _, conn := range c.connList {
 		_, err := conn.Write(c.sessionID[:])
 		if err != nil {
 			// TODO: Because we don't currently have a redial mechanism,
@@ -107,7 +107,7 @@ func (c *RoundRobinPacketConn) exchange() error {
 	done := make(chan struct{})
 	// Read encapsulated packets from the connection and write them to
 	// c.recvQueue.
-	for _, conn := range c.conns {
+	for _, conn := range c.connList {
 		go func() {
 			defer wg.Done()
 			defer close(done) // Signal the write loop to finish.
@@ -129,7 +129,7 @@ func (c *RoundRobinPacketConn) exchange() error {
 	// connection.
 	go func() {
 		defer wg.Done()
-		for _, conn := range c.conns {
+		for _, conn := range c.connList {
 			defer conn.Close() // Signal the read loop to finish.
 		}
 		for {

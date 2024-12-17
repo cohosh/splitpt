@@ -41,7 +41,7 @@ func copyLoop(socks *pt.SocksConn, sptstream *smux.Stream) {
 	log.Printf("copy loop done")
 }
 
-func socksAcceptLoop(ln *pt.SocksListener, tomlConfig *spt.ConnectionsList, shutdown chan struct{}, wg *sync.WaitGroup) error {
+func socksAcceptLoop(ln *pt.SocksListener, sptConfig *spt.SplitPTConfig, shutdown chan struct{}, wg *sync.WaitGroup) error {
 	log.Printf("socksAcceptLoop()")
 	defer ln.Close()
 	for {
@@ -57,7 +57,7 @@ func socksAcceptLoop(ln *pt.SocksListener, tomlConfig *spt.ConnectionsList, shut
 
 		go func() {
 			defer wg.Done()
-			transport, err := spt.NewSplitPTClient(tomlConfig)
+			transport, err := spt.NewSplitPTClient(*sptConfig)
 			if err != nil {
 				log.Printf("Transport error: %s", err)
 				conn.Reject()
@@ -124,7 +124,7 @@ func main() {
 		log.Printf("toml filename cannot be empty")
 		return
 	}
-	tomlConfig, err := spt.GetClientTOMLConfig(*tomlFilename)
+	sptConfig, err := spt.GetClientTOMLConfig(*tomlFilename)
 	if err != nil {
 		log.Printf("Error with toml config: %v", err)
 		return
@@ -162,7 +162,7 @@ func main() {
 				break
 			}
 			log.Printf("Started SOCKS listenener at %v", ln.Addr())
-			go socksAcceptLoop(ln, tomlConfig, shutdown, &wg)
+			go socksAcceptLoop(ln, sptConfig, shutdown, &wg)
 			pt.Cmethod(methodName, ln.Version(), ln.Addr())
 			listeners = append(listeners, ln)
 		default:

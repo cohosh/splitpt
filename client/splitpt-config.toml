@@ -1,12 +1,12 @@
-splittingalg = "random"
+splittingalg = "round-robin"
 
-[[connections]]
+[[splitpt.connections]]
 
 transport = "lyrebird"
 args = ["", ""]
 cert = ""
 
-[[connections]]
+[[splitpt.connections]]
 
 transport = "webtunnel"
 args = ["",""]

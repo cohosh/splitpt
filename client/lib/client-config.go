@@ -8,20 +8,18 @@ import (
 )
 
 type SplitPTConfig struct {
-	Connections  map[string]Connections
 	SplittingAlg string
+	Connections  map[string][]struct {
+		Transport string
+		Args      []string
+		Cert      string
+	}
 }
 
-type Connections struct {
-	Transport string
-	Args      []string
-	Cert      string
-}
-
-func GetClientTOMLConfig(tomlFilename string) (*ConnectionsList, error) {
+func GetClientTOMLConfig(tomlFilename string) (*SplitPTConfig, error) {
 	log.Printf("Decoding TOML")
 	log.Printf(tomlFilename)
-	var config ConnectionsList
+	var config SplitPTConfig
 	meta, err := toml.DecodeFile(tomlFilename, &config)
 	if err != nil {
 		log.Printf("Error decoding TOML config")
@@ -33,7 +31,11 @@ func GetClientTOMLConfig(tomlFilename string) (*ConnectionsList, error) {
 		log.Printf(config.SplittingAlg)
 	default:
 		log.Printf("Invalid splitting algorithm")
-		return _, errors.New("Invalid splitting algorithm in TOML")
+		return nil, errors.New("Invalid splitting algorithm in TOML")
+	}
+	for conn := range config.Connections {
+		log.Printf("Connections: ")
+		log.Printf(conn)
 	}
 	log.Println(meta.Keys())
 	log.Println(meta.Undecoded())

@@ -7,6 +7,7 @@ package splitpt_client
 import (
 	split "anticensorshiptrafficsplitting/splitpt/common/split"
 	tt "anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
+	"errors"
 	"log"
 	"net"
 	"time"
@@ -16,6 +17,11 @@ import (
 	"github.com/xtaci/smux"
 )
 
+type dummyAddr struct{}
+
+func (addr dummyAddr) Network() string { return "dummy" }
+func (addr dummyAddr) String() string  { return "dummy" }
+
 const (
 	HOST = "217.162.72.192"
 	PORT = "8888"
@@ -23,11 +29,11 @@ const (
 )
 
 type SplitPTClient struct {
-	config SplitPTClientConfig
+	SplitPTConfig
 }
 
-func NewSplitPTClient(sptClientConfig split.SplitPTClientConfig) (SplitPTClient, error) {
-	return SplitPTClient{config: config}, nil
+func NewSplitPTClient(config SplitPTConfig) (SplitPTClient, error) {
+	return SplitPTClient{SplitPTConfig: config}, nil
 }
 
 func (t *SplitPTClient) Dial() (*smux.Stream, error) {
@@ -55,7 +61,7 @@ func (t *SplitPTClient) Dial() (*smux.Stream, error) {
 		case "round-robin":
 			pconn = split.NewRoundRobinPacketConn(sessionID, ptconn)
 	}*/
-	pconn := split.NewRoundRobinPacketConn(sessionID, connList)
+	pconn := split.NewRoundRobinPacketConn(sessionID, connList, dummyAddr{})
 	conn, err := kcp.NewConn2(pconn.RemoteAddr(), nil, 0, 0, pconn)
 	if err != nil {
 		return nil, err
@@ -88,25 +94,32 @@ func (t *SplitPTClient) Dial() (*smux.Stream, error) {
 }
 
 func (t *SplitPTClient) GetPTConnections() ([]net.Conn, error) {
-	var connlist []net.Conn
+	var connList []net.Conn
 	tcpaddr, err := net.ResolveTCPAddr("tcp", "localhost:9090")
 	if err != nil {
 		log.Printf("Error resolving TCP address: %s", err.Error())
-		return nil, error
+		return nil, err
 	}
-	for conn := range t.config.Connections {
+
+	for _, conn := range t.Connections["splitpt"] {
 		var client *socks5.Client
 		if conn.Transport == "lyrebird" {
-			client := spt.LyrebirdConnect(conn.Args, conn.Cert)
+			// TODO need interface for this i guess?
+			client, err = LyrebirdConnect(&conn.Args, conn.Cert)
+			if err != nil {
+				log.Printf("Error connecting to lyrebird: %s", err.Error())
+				return nil, err
+			}
 		} else {
-			err := error.New("Unrecognized PT")
-			return _, err
+			err := errors.New("Unrecognized PT")
+			return nil, err
 		}
 		ptconn, err := client.DialWithLocalAddr("tcp", "", "localhost:9090", tcpaddr)
 		if err != nil {
 			log.Printf("Error dialing: %s", err.Error())
 			return nil, err
 		}
-		connList.append(ptconn)
+		connList = append(connList, ptconn)
 	}
+	return connList, nil
 }
