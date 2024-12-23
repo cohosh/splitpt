@@ -80,7 +80,7 @@ func (c *RoundRobinPacketConn) loop() error {
 			return nil
 		default:
 		}
-		log.Printf("session %v: redialing %v", c.sessionID, c.remoteAddr)
+		log.Printf("[RR Packet Conn] session %v: redialing %v", c.sessionID, c.remoteAddr)
 		err := c.exchange()
 		if err != nil {
 			return err
@@ -97,7 +97,7 @@ func (c *RoundRobinPacketConn) exchange() error {
 		if err != nil {
 			// TODO: Because we don't currently have a redial mechanism,
 			// errors are fatal
-			log.Printf("Error writing to conn %s", err.Error())
+			log.Printf("[RR Packet Conn] Error writing to conn %s", err.Error())
 			return err
 		}
 	}

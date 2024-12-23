@@ -27,13 +27,13 @@ func copyLoop(socks *pt.SocksConn, sptstream *smux.Stream) {
 	done := make(chan struct{}, 2)
 	go func() {
 		if _, err := io.Copy(socks, sptstream); err != nil {
-			log.Printf("copying to SOCKS resulted in error: %v", err)
+			log.Printf("[copyLoop] copying to SOCKS resulted in error: %v", err)
 		}
 		done <- struct{}{}
 	}()
 	go func() {
 		if _, err := io.Copy(sptstream, socks); err != nil {
-			log.Printf("copying to SOCKS resulted in error: %v", err)
+			log.Printf("[copyLoop] copying from SOCKS resulted in error: %v", err)
 			done <- struct{}{}
 		}
 	}()
@@ -63,7 +63,7 @@ func socksAcceptLoop(ln *pt.SocksListener, sptConfig *spt.SplitPTConfig, shutdow
 				conn.Reject()
 				return
 			}
-
+			log.Printf("Dialing...")
 			sconn, err := transport.Dial()
 			if err != nil {
 				log.Printf("Dial error: %s", err)
@@ -76,6 +76,7 @@ func socksAcceptLoop(ln *pt.SocksListener, sptConfig *spt.SplitPTConfig, shutdow
 			copyLoop(conn, sconn)
 		}()
 	}
+	log.Printf("Returning from socksAcceptLoop")
 	return nil
 }
 

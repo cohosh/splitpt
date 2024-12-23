@@ -6,8 +6,3 @@ transport = "lyrebird"
 args = ["", ""]
 cert = ""
 
-[[splitpt.connections]]
-
-transport = "webtunnel"
-args = ["",""]
-cert = ""

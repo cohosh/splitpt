@@ -37,6 +37,7 @@ func NewSplitPTClient(config SplitPTConfig) (SplitPTClient, error) {
 }
 
 func (t *SplitPTClient) Dial() (*smux.Stream, error) {
+	log.Printf("Dialing")
 	var cleanup []func()
 	defer func() {
 		for i := len(cleanup) - 1; i >= 0; i-- {
@@ -61,7 +62,9 @@ func (t *SplitPTClient) Dial() (*smux.Stream, error) {
 		case "round-robin":
 			pconn = split.NewRoundRobinPacketConn(sessionID, ptconn)
 	}*/
+	log.Printf("Getting splitting packet conn")
 	pconn := split.NewRoundRobinPacketConn(sessionID, connList, dummyAddr{})
+	log.Printf("Got splitting packet conn")
 	conn, err := kcp.NewConn2(pconn.RemoteAddr(), nil, 0, 0, pconn)
 	if err != nil {
 		return nil, err
@@ -82,7 +85,7 @@ func (t *SplitPTClient) Dial() (*smux.Stream, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	log.Printf("Finished dialing")
 	return stream, nil
 	// AHL simple tcp server for now
 	//tcpServer, err := net.ResolveTCPAddr(TYPE, HOST+":"+PORT)
@@ -94,18 +97,24 @@ func (t *SplitPTClient) Dial() (*smux.Stream, error) {
 }
 
 func (t *SplitPTClient) GetPTConnections() ([]net.Conn, error) {
+	log.Printf("Launching PT connections")
 	var connList []net.Conn
 	tcpaddr, err := net.ResolveTCPAddr("tcp", "localhost:9090")
 	if err != nil {
 		log.Printf("Error resolving TCP address: %s", err.Error())
 		return nil, err
 	}
-
-	for _, conn := range t.Connections["splitpt"] {
+	for i := 0; i < 1; i++ {
+		//for _, conn := range t.Connections["splitpt"] {
 		var client *socks5.Client
-		if conn.Transport == "lyrebird" {
+		//log.Printf("conn.Transport: %s", conn.Transport)
+		//if conn.Transport == "lyrebird" {
+		if true {
 			// TODO need interface for this i guess?
-			client, err = LyrebirdConnect(&conn.Args, conn.Cert)
+			log.Printf("Launching Lyrebird connection")
+			//	client, err = LyrebirdConAnect(&conn.Args, conn.Cert)
+			args := []string{"", ""}
+			client, err = LyrebirdConnect(&args, "")
 			if err != nil {
 				log.Printf("Error connecting to lyrebird: %s", err.Error())
 				return nil, err
@@ -121,5 +130,6 @@ func (t *SplitPTClient) GetPTConnections() ([]net.Conn, error) {
 		}
 		connList = append(connList, ptconn)
 	}
+	log.Printf("Connections launched: %v", len(connList))
 	return connList, nil
 }
