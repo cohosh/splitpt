@@ -71,7 +71,7 @@ func LyrebirdConnect(args *[]string, cert string) (*socks5.Client, error) {
 	}
 
 	log.Printf("Getting Lyrebird SOCKS client")
-	client, err := socks5.NewClient(socks5addr, "cert=xmK64YEbi2h1aZC5P5s7MyiUN8gmypIRDnaiRKmB4/qT0lGkaAglYlzKPrkpc4I2PHhVNg;iat-mode=0", "\x00", 60, 0)
+	client, err := socks5.NewClient(socks5addr, "cert=xmK64YEbi2h1aZC5P5s7MyiUN8gmypIRDnaiRKmB4/qT0lGkaAglYlzKPrkpc4I2PHhVNg;iat-mode=0", "\x00", 0, 0)
 	if err != nil {
 		log.Printf("Error connecting to pt")
 		return nil, err
