@@ -104,17 +104,14 @@ func (t *SplitPTClient) GetPTConnections() ([]net.Conn, error) {
 		log.Printf("Error resolving TCP address: %s", err.Error())
 		return nil, err
 	}
-	for i := 0; i < 1; i++ {
-		//for _, conn := range t.Connections["splitpt"] {
+	for _, conn := range t.Connections["connections"] {
 		var client *socks5.Client
 		//log.Printf("conn.Transport: %s", conn.Transport)
-		//if conn.Transport == "lyrebird" {
-		if true {
+		if conn.Transport == "lyrebird" {
 			// TODO need interface for this i guess?
 			log.Printf("Launching Lyrebird connection")
 			//	client, err = LyrebirdConAnect(&conn.Args, conn.Cert)
-			args := []string{"", ""}
-			client, err = LyrebirdConnect(&args, "")
+			client, err = LyrebirdConnect(&conn.Args, conn.Cert)
 			if err != nil {
 				log.Printf("Error connecting to lyrebird: %s", err.Error())
 				return nil, err
