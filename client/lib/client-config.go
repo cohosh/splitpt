@@ -13,13 +13,14 @@ type SplitPTConfig struct {
 		Transport string
 		Args      []string
 		Cert      string
+		Bridge    string
 	}
 }
 
 func GetClientTOMLConfig(tomlFilename string) (*SplitPTConfig, error) {
 	log.Printf("Decoding TOML")
 	var config SplitPTConfig
-	meta, err := toml.DecodeFile(tomlFilename, &config)
+	_, err := toml.DecodeFile(tomlFilename, &config)
 	if err != nil {
 		log.Printf("Error decoding TOML config")
 		return nil, err
@@ -32,12 +33,12 @@ func GetClientTOMLConfig(tomlFilename string) (*SplitPTConfig, error) {
 		log.Printf("Invalid splitting algorithm")
 		return nil, errors.New("Invalid splitting algorithm in TOML")
 	}
-	log.Printf("%v connections found", len(config.Connections["splitpt"]))
-	for _, conn := range config.Connections["splitpt"] {
+	log.Printf("%v connections found", len(config.Connections["connections"]))
+	for _, conn := range config.Connections["connections"] {
 		log.Printf("Connections: ")
 		log.Printf(conn.Transport)
+		log.Printf(conn.Cert)
+		log.Printf(conn.Bridge)
 	}
-	log.Println(meta.Keys())
-	log.Println(meta.Undecoded())
 	return &config, nil
 }
