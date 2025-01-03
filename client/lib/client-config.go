@@ -1,33 +1,44 @@
 package splitpt_client
 
 import (
+	"errors"
 	"log"
 
 	"github.com/BurntSushi/toml"
 )
 
-type ConnectionsList struct {
-	Connections  map[string]Connections
-	Splittingalg string
+type SplitPTConfig struct {
+	SplittingAlg string
+	Connections  map[string][]struct {
+		Transport string
+		Args      []string
+		Cert      string
+		Bridge    string
+	}
 }
 
-type Connections struct {
-	Transport string
-	Args      []string
-	Cert      string
-}
-
-func GetClientTOMLConfig(tomlFilename string) (*ConnectionsList, error) {
+func GetClientTOMLConfig(tomlFilename string) (*SplitPTConfig, error) {
 	log.Printf("Decoding TOML")
-	log.Printf(tomlFilename)
-	var config ConnectionsList
-	meta, err := toml.DecodeFile(tomlFilename, &config)
+	var config SplitPTConfig
+	_, err := toml.DecodeFile(tomlFilename, &config)
 	if err != nil {
 		log.Printf("Error decoding TOML config")
 		return nil, err
 	}
-	log.Printf(config.Splittingalg)
-	log.Println(meta.Keys())
-	log.Println(meta.Undecoded())
+
+	switch config.SplittingAlg {
+	case "round-robin":
+		log.Printf(config.SplittingAlg)
+	default:
+		log.Printf("Invalid splitting algorithm")
+		return nil, errors.New("Invalid splitting algorithm in TOML")
+	}
+	log.Printf("%v connections found", len(config.Connections["connections"]))
+	for _, conn := range config.Connections["connections"] {
+		log.Printf("Connections: ")
+		log.Printf(conn.Transport)
+		log.Printf(conn.Cert)
+		log.Printf(conn.Bridge)
+	}
 	return &config, nil
 }

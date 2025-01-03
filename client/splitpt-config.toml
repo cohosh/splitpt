@@ -1,13 +1,17 @@
-splittingalg = "random"
+splittingalg = "round-robin"
 
-[[connections]]
+[[connections.connections]]
 
 transport = "lyrebird"
 args = ["", ""]
-cert = ""
+cert = "xxx"
+bridge = "yyy"
 
-[[connections]]
+[[connections.connections]]
 
-transport = "webtunnel"
-args = ["",""]
-cert = ""
+transport = "lyrebird"
+args = ["", ""]
+cert = "xxx"
+bridge = "yyy"
+
+
