@@ -29,6 +29,8 @@ func GetClientTOMLConfig(tomlFilename string) (*SplitPTConfig, error) {
 	switch config.SplittingAlg {
 	case "round-robin":
 		log.Printf(config.SplittingAlg)
+	case "random":
+		log.Printf(config.SplittingAlg)
 	default:
 		log.Printf("Invalid splitting algorithm")
 		return nil, errors.New("Invalid splitting algorithm in TOML")
