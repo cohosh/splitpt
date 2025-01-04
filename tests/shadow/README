@@ -1,0 +1,5 @@
+Run with:
+
+```
+shadow --model-unblocked-syscall-latency=true shadow.yaml --template-directory=shadow.data.template > shadow.log
+```
