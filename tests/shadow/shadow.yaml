@@ -112,10 +112,11 @@ hosts:
     network_node_id: 0
     processes:
     - path: splitpt-client
-      args: -log splitpt.log
+      args: -log splitpt.log -toml splitpt-config.toml
       environment:
         TOR_PT_MANAGED_TRANSPORT_VER: "1"
         TOR_PT_CLIENT_TRANSPORTS: "splitpt"
+        PATH: ~/.local/bin
       start_time: 1
       expected_final_state: running
     # The following snippet was developed by the proteus authors and used with their permission
