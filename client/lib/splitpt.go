@@ -63,7 +63,15 @@ func (t *SplitPTClient) Dial() (*smux.Stream, error) {
 			pconn = split.NewRoundRobinPacketConn(sessionID, ptconn)
 	}*/
 	log.Printf("Getting splitting packet conn")
-	pconn := split.NewRoundRobinPacketConn(sessionID, connList, dummyAddr{})
+
+	var pconn split.SplittingPacketConn
+	switch t.SplittingAlg {
+	case "round-robin":
+		pconn = split.NewRoundRobinPacketConn(sessionID, connList, dummyAddr{})
+	case "random":
+		pconn = split.NewRandomPacketConn(sessionID, connList, dummyAddr{})
+
+	}
 	log.Printf("Got splitting packet conn")
 	conn, err := kcp.NewConn2(pconn.RemoteAddr(), nil, 0, 0, pconn)
 	if err != nil {
