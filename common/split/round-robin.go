@@ -2,7 +2,6 @@ package split
 
 import (
 	"bufio"
-	"errors"
 	"log"
 	"net"
 	"sync"
@@ -12,16 +11,6 @@ import (
 	"anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
 	tt "anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
 )
-
-var errClosed = errors.New("operation on closed connection")
-var errNotImplemented = errors.New("not implemented")
-
-// stringAddr satisfies the net.Addr interface using fixed strings for the
-// Network and String methods.
-type stringAddr struct{ network, address string }
-
-func (addr stringAddr) Network() string { return addr.network }
-func (addr stringAddr) String() string  { return addr.address }
 
 // RoundRobinPacketConn implements the net.PacketConn interface by continually
 //

@@ -2,9 +2,8 @@ package split
 
 import (
 	"bufio"
-	"errors"
 	"log"
-	"math/rand/v2"
+	"math/rand"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -13,16 +12,6 @@ import (
 	"anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
 	tt "anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
 )
-
-var errClosed = errors.New("operation on closed connection")
-var errNotImplemented = errors.New("not implemented")
-
-// stringAddr satisfies the net.Addr interface using fixed strings for the
-// Network and String methods.
-type stringAddr struct{ network, address string }
-
-func (addr stringAddr) Network() string { return addr.network }
-func (addr stringAddr) String() string  { return addr.address }
 
 // RandomPacketConn implements the net.PacketConn interface by continually
 //
@@ -48,8 +37,8 @@ func NewRandomPacketConn(
 	sessionID tt.SessionID,
 	connList []net.Conn,
 	remote net.Addr,
-) *RoundRandomConn {
-	c := &RoundRobinPacketConn{
+) *RandomPacketConn {
+	c := &RandomPacketConn{
 		sessionID:  sessionID,
 		remoteAddr: remote,
 		recvQueue:  make(chan []byte, 32),
@@ -64,7 +53,7 @@ func NewRandomPacketConn(
 
 // Next returns the next connection to write a packet to
 func (c *RandomPacketConn) getConn() net.Conn {
-	index := rand.IntN(len(c.connList))
+	index := rand.Intn(len(c.connList))
 	return c.connList[index]
 }
 
