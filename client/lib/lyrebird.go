@@ -10,7 +10,7 @@ import (
 	"github.com/txthinking/socks5"
 )
 
-func LyrebirdConnect(args *[]string, cert string) (*socks5.Client, error) {
+func LyrebirdConnect(args []string, cert string) (*socks5.Client, error) {
 	log.Printf("Conecting to Lyrebird")
 	ptchan := make(chan string)
 	pterr := make(chan error)
@@ -71,11 +71,15 @@ func LyrebirdConnect(args *[]string, cert string) (*socks5.Client, error) {
 	}
 
 	log.Printf("Getting Lyrebird SOCKS client")
-	client, err := socks5.NewClient(socks5addr, "cert=xmK64YEbi2h1aZC5P5s7MyiUN8gmypIRDnaiRKmB4/qT0lGkaAglYlzKPrkpc4I2PHhVNg;iat-mode=0", "\x00", 0, 0)
+	client, err := socks5.NewClient(socks5addr, encodeArgs(args), "\x00", 0, 0)
 	if err != nil {
 		log.Printf("Error connecting to pt")
 		return nil, err
 	}
 
 	return client, nil
+}
+
+func encodeArgs(args []string) string {
+	return strings.Join(args[:], ";")
 }
