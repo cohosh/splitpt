@@ -1,4 +1,4 @@
 client/client
 server/server
 *.log
-
+pt-setup/server-state/lyrebird.log
