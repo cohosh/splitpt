@@ -99,19 +99,19 @@ func (t *SplitPTClient) Dial() (*smux.Stream, error) {
 func (t *SplitPTClient) GetPTConnections() ([]net.Conn, error) {
 	log.Printf("Launching PT connections")
 	var connList []net.Conn
-	tcpaddr, err := net.ResolveTCPAddr("tcp", "localhost:9090")
-	if err != nil {
-		log.Printf("Error resolving TCP address: %s", err.Error())
-		return nil, err
-	}
 	for _, conn := range t.Connections["connections"] {
 		var client *socks5.Client
 		//log.Printf("conn.Transport: %s", conn.Transport)
+		tcpaddr, err := net.ResolveTCPAddr("tcp", conn.Bridge)
+		if err != nil {
+			log.Printf("Error resolving TCP address: %s", err.Error())
+			return nil, err
+		}
 		if conn.Transport == "lyrebird" {
 			// TODO need interface for this i guess?
 			log.Printf("Launching Lyrebird connection")
 			//	client, err = LyrebirdConAnect(&conn.Args, conn.Cert)
-			client, err = LyrebirdConnect(&conn.Args, conn.Cert)
+			client, err = LyrebirdConnect(conn.Args, conn.Cert)
 			if err != nil {
 				log.Printf("Error connecting to lyrebird: %s", err.Error())
 				return nil, err
@@ -120,7 +120,7 @@ func (t *SplitPTClient) GetPTConnections() ([]net.Conn, error) {
 			err := errors.New("Unrecognized PT")
 			return nil, err
 		}
-		ptconn, err := client.DialWithLocalAddr("tcp", "", "localhost:9090", tcpaddr)
+		ptconn, err := client.DialWithLocalAddr("tcp", "", conn.Bridge, tcpaddr)
 		if err != nil {
 			log.Printf("Error dialing: %s", err.Error())
 			return nil, err
