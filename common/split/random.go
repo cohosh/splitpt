@@ -3,6 +3,7 @@ package split
 import (
 	"bufio"
 	"log"
+	"math/rand"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -12,7 +13,7 @@ import (
 	tt "anticensorshiptrafficsplitting/splitpt/common/turbotunnel"
 )
 
-// RoundRobinPacketConn implements the net.PacketConn interface by continually
+// RandomPacketConn implements the net.PacketConn interface by continually
 //
 // Every Turbo Tunnel design will need some sort of PacketConn adapter that
 // adapts the session layer's sequence of packets to the obfuscation layer. But
@@ -20,7 +21,7 @@ import (
 // the obfuscation layer looks like. Some obfuscation layers will not need a
 // persistent connection. One could, for example, handle every ReadFrom or
 // WriteTo as an independent network operation.
-type RoundRobinPacketConn struct {
+type RandomPacketConn struct {
 	sessionID  turbotunnel.SessionID
 	remoteAddr net.Addr
 	recvQueue  chan []byte
@@ -29,23 +30,20 @@ type RoundRobinPacketConn struct {
 	closed     chan struct{}
 	connList   []net.Conn
 	// What error to return when the RoundRobinPacketConn is closed.
-	err   atomic.Value
-	state uint32
+	err atomic.Value
 }
 
-func NewRoundRobinPacketConn(
+func NewRandomPacketConn(
 	sessionID tt.SessionID,
 	connList []net.Conn,
 	remote net.Addr,
-) *RoundRobinPacketConn {
-	c := &RoundRobinPacketConn{
+) *RandomPacketConn {
+	c := &RandomPacketConn{
 		sessionID:  sessionID,
 		remoteAddr: remote,
 		recvQueue:  make(chan []byte, 32),
 		sendQueue:  make(chan []byte, 32),
 		closed:     make(chan struct{}),
-		connList:   connList,
-		state:      0,
 	}
 	go func() {
 		c.closeWithError(c.loop())
@@ -54,15 +52,15 @@ func NewRoundRobinPacketConn(
 }
 
 // Next returns the next connection to write a packet to
-func (c *RoundRobinPacketConn) getConn() net.Conn {
-	index := atomic.AddUint32(&c.state, 1)
-	return c.connList[index%uint32(len(c.connList))]
+func (c *RandomPacketConn) getConn() net.Conn {
+	index := rand.Intn(len(c.connList))
+	return c.connList[index]
 }
 
 // loop dials c.remoteAddr in a loop, exchanging packets on each new connection
 // as long as it lasts. Only errors in dialing break the loop and report the
 // error to the caller.
-func (c *RoundRobinPacketConn) loop() error {
+func (c *RandomPacketConn) loop() error {
 	for {
 		select {
 		case <-c.closed:
@@ -77,7 +75,7 @@ func (c *RoundRobinPacketConn) loop() error {
 	}
 }
 
-func (c *RoundRobinPacketConn) exchange() error {
+func (c *RandomPacketConn) exchange() error {
 
 	// Begin by sending the session identifier to each connection; everything after that is
 	// encapsulated packets.
@@ -147,7 +145,7 @@ func (c *RoundRobinPacketConn) exchange() error {
 	return nil
 }
 
-func (c *RoundRobinPacketConn) ReadFrom(p []byte) (int, net.Addr, error) {
+func (c *RandomPacketConn) ReadFrom(p []byte) (int, net.Addr, error) {
 	select {
 	case <-c.closed:
 		return 0, nil, &net.OpError{Op: "read", Net: c.remoteAddr.Network(), Source: c.sessionID, Addr: c.remoteAddr, Err: c.err.Load().(error)}
@@ -161,7 +159,7 @@ func (c *RoundRobinPacketConn) ReadFrom(p []byte) (int, net.Addr, error) {
 	}
 }
 
-func (c *RoundRobinPacketConn) WriteTo(p []byte, addr net.Addr) (int, error) {
+func (c *RandomPacketConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	select {
 	case <-c.closed:
 		return 0, &net.OpError{Op: "write", Net: c.remoteAddr.Network(), Source: c.sessionID, Addr: c.remoteAddr, Err: c.err.Load().(error)}
@@ -179,7 +177,7 @@ func (c *RoundRobinPacketConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 
 // closeWithError unblocks pending operations and makes future operations fail
 // with the given error. If err is nil, it becomes errClosed.
-func (c *RoundRobinPacketConn) closeWithError(err error) error {
+func (c *RandomPacketConn) closeWithError(err error) error {
 	firstClose := false
 	c.closeOnce.Do(func() {
 		firstClose = true
@@ -196,11 +194,11 @@ func (c *RoundRobinPacketConn) closeWithError(err error) error {
 	return nil
 }
 
-func (c *RoundRobinPacketConn) Close() error { return c.closeWithError(nil) }
+func (c *RandomPacketConn) Close() error { return c.closeWithError(nil) }
 
-func (c *RoundRobinPacketConn) LocalAddr() net.Addr  { return c.sessionID }
-func (c *RoundRobinPacketConn) RemoteAddr() net.Addr { return c.remoteAddr }
+func (c *RandomPacketConn) LocalAddr() net.Addr  { return c.sessionID }
+func (c *RandomPacketConn) RemoteAddr() net.Addr { return c.remoteAddr }
 
-func (c *RoundRobinPacketConn) SetDeadline(t time.Time) error      { return errNotImplemented }
-func (c *RoundRobinPacketConn) SetReadDeadline(t time.Time) error  { return errNotImplemented }
-func (c *RoundRobinPacketConn) SetWriteDeadline(t time.Time) error { return errNotImplemented }
+func (c *RandomPacketConn) SetDeadline(t time.Time) error      { return errNotImplemented }
+func (c *RandomPacketConn) SetReadDeadline(t time.Time) error  { return errNotImplemented }
+func (c *RandomPacketConn) SetWriteDeadline(t time.Time) error { return errNotImplemented }
