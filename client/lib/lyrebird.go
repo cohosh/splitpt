@@ -17,7 +17,7 @@ func LyrebirdConnect(args []string, cert string) (*socks5.Client, error) {
 	ptshutdown := make(chan struct{})
 
 	ctx := context.Background()
-	ptproc := exec.CommandContext(ctx, "lyrebird", "-enableLogging", "-logLevel", "DEBUG")
+	ptproc := exec.CommandContext(ctx, "/usr/local/bin/lyrebird", "-enableLogging", "-logLevel", "DEBUG")
 	//log.Printf(ptproc.Env)
 	ptproc.Env = append(ptproc.Environ(), "TOR_PT_MANAGED_TRANSPORT_VER=1")
 	ptproc.Env = append(ptproc.Environ(), "TOR_PT_EXIT_ON_STDIN_CLOSE=0")

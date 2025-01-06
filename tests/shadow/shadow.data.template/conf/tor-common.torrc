@@ -10,9 +10,6 @@ ServerDNSDetectHijacking 0
 AssumeReachable 1
 AuthDirTestReachability 0
 NumCPUs 1
-Log info stdout
-LogTimeGranularity 1
-HeartbeatPeriod 1
 SafeLogging 0
 ContactInfo https://github.com/shadow/shadow/issues
 DisableDebuggerAttachment 0
