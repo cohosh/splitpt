@@ -111,7 +111,7 @@ func (t *SplitPTClient) GetPTConnections() ([]net.Conn, error) {
 			// TODO need interface for this i guess?
 			log.Printf("Launching Lyrebird connection")
 			//	client, err = LyrebirdConAnect(&conn.Args, conn.Cert)
-			client, err = LyrebirdConnect(conn.Args, conn.Cert)
+			client, err = LyrebirdConnect(t.LyrebirdPath, conn.Args, conn.Cert)
 			if err != nil {
 				log.Printf("Error connecting to lyrebird: %s", err.Error())
 				return nil, err
