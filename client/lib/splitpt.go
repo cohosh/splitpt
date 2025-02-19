@@ -115,7 +115,7 @@ func (t *SplitPTClient) GetPTConnections() ([]net.Conn, error) {
 			log.Printf("Error resolving TCP address: %s", err.Error())
 			return nil, err
 		}
-		if conn.Transport == "lyrebird" {
+		if conn.Transport == "proteus" {
 			// TODO need interface for this i guess?
 			log.Printf("Launching Lyrebird connection")
 			//	client, err = LyrebirdConAnect(&conn.Args, conn.Cert)

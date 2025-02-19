@@ -3,7 +3,9 @@ package splitpt_client
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -17,12 +19,14 @@ func LyrebirdConnect(path string, args []string, cert string) (*socks5.Client, e
 	ptshutdown := make(chan struct{})
 
 	ctx := context.Background()
-	ptproc := exec.CommandContext(ctx, path, "-enableLogging", "-logLevel", "DEBUG")
+	ptproc := exec.CommandContext(ctx, path)
 	//log.Printf(ptproc.Env)
+	cwd, _ := os.Getwd()
+	statedir := fmt.Sprintf("TOR_PT_STATE_LOCATION=%s/pt-setup/client-state/", cwd)
 	ptproc.Env = append(ptproc.Environ(), "TOR_PT_MANAGED_TRANSPORT_VER=1")
 	ptproc.Env = append(ptproc.Environ(), "TOR_PT_EXIT_ON_STDIN_CLOSE=0")
-	ptproc.Env = append(ptproc.Environ(), "TOR_PT_CLIENT_TRANSPORTS=obfs4")
-	ptproc.Env = append(ptproc.Environ(), "TOR_PT_STATE_LOCATION=../pt-setup/client-state/")
+	ptproc.Env = append(ptproc.Environ(), "TOR_PT_CLIENT_TRANSPORTS=proteus")
+	ptproc.Env = append(ptproc.Environ(), statedir)
 
 	log.Printf("Getting stdoutpipe")
 	ptprocout, err := ptproc.StdoutPipe()
@@ -41,6 +45,7 @@ func LyrebirdConnect(path string, args []string, cert string) (*socks5.Client, e
 	go func() {
 		scanner := bufio.NewScanner(ptprocout)
 		for scanner.Scan() {
+			log.Println(scanner.Text())
 			if strings.Contains(scanner.Text(), "socks5") {
 				line := strings.Split(scanner.Text(), " ")
 				ptchan <- line[3]
@@ -54,6 +59,12 @@ func LyrebirdConnect(path string, args []string, cert string) (*socks5.Client, e
 			log.Printf("Error scanning for socks5 addr: %s", err2.Error())
 			pterr <- err2
 		}
+		go func() {
+			for scanner.Scan() {
+				log.Println(scanner.Text())
+			}
+		}()
+
 		<-ptshutdown
 		err3 := ptproc.Wait()
 		if err3 != nil {

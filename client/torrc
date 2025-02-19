@@ -1,7 +1,7 @@
 UseBridges 1
 DataDirectory datadir
 
-ClientTransportPlugin splitpt exec ./client -log splitpt.log -toml splitpt-config.toml
+ClientTransportPlugin splitpt exec ./client -log splitpt.log -toml proteus.toml
 
 Bridge splitpt 192.0.0.1:80
 

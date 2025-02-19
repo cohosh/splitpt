@@ -1,0 +1,10 @@
+splittingalg = "round-robin"
+
+lyrebirdpath = "/usr/local/bin/proteus"
+
+[[connections.connections]]
+
+transport = "proteus"
+args = ["psf=../pt-setup/shadowsocks.psf"]
+cert = ""
+bridge = "127.0.0.1:9090"
